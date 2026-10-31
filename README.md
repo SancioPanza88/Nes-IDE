@@ -4,7 +4,7 @@ Un ambiente di sviluppo per la NES (Nintendo Entertainment System) in **un solo 
 Dentro c'è tutto quello che serve per scrivere, assemblare, provare ed esportare un gioco.
 
 > **Stato del progetto:** è in costruzione. Funziona per scrivere e provare giochi in assembly 6502, ma non è ancora completo come un ambiente professionale (vedi «Cosa manca»).
-> Il codice è stato collaudato con test automatici (CPU, assembler, mapper, grafica), ma **non è mai stato aperto in un browser vero**: se un pulsante non risponde, è un difetto da segnalare.
+
 
 ## Come si usa
 
