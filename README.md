@@ -9,7 +9,7 @@ Dentro c'è tutto quello che serve per scrivere, assemblare, provare ed esportar
 ## Come si usa
 
 1. Apri `NES_IDE.html` in un browser moderno (Chrome, Edge, Firefox, Safari).
-2. Scegli un esempio dal menu **Esempi** oppure scrivi il tuo codice a sinistra.
+2. Scegli un esempio dal menu **Esempi** (c'è anche un gioco completo: vedi «Esempio completo: Tomb Raider») oppure scrivi il tuo codice a sinistra.
 3. Premi **▶ RUN** (o `F9`, o `Ctrl+Invio`): il codice viene assemblato e il gioco parte nello schermo a destra.
 4. Clicca sullo schermo per usare la tastiera: **frecce**, **Z** = B, **X** = A, **Invio** = Start, **Shift** = Select.
 5. **↓ .NES** scarica la ROM, che funziona anche in altri emulatori.
@@ -74,6 +74,45 @@ Gli editor applicano le modifiche al codice quando premi **Applica al codice** o
 ```
 
 Ricorda di mettere i vettori a `.org $FFFA` con `.word nmi, reset, 0`.
+
+## Esempio completo: Tomb Raider: The Prophecy (demake)
+
+Un piccolo gioco d'avventura con la **visuale isometrica** di *Tomb Raider: The Prophecy* (GBA), in un solo file `.asm` (mapper 0, 32 KB PRG + 8 KB CHR, nessun audio). È giocabile dall'inizio alla fine: tre stanze, finale compreso. Serve da esempio di un progetto vero: apri il sorgente, leggilo, cambialo.
+
+**Per provarlo:** scegline il file `tomb_raider.asm` (o l'esempio nel menu), premi **▶ RUN**, clicca sullo schermo e premi **Invio** al titolo. `tomb_raider.nes` è la ROM già assemblata, per altri emulatori.
+
+| Tasto | Azione |
+|---|---|
+| Frecce | Muovi Lara in 8 direzioni (le diagonali seguono gli assi delle caselle) |
+| **X** (A) | Salta nella direzione in cui guarda |
+| **Z** (B) | Spara |
+| Camminare contro un blocco | Lo spinge (tieni premuto giù+destra) |
+| **Invio** (Start) | Inizia / ricomincia |
+
+**Come si gioca, in breve.** Hai 6 cuori; le medipack ne ridanno 3. Nella prima stanza salta la fossa e prendi la chiave per aprire la porta; nella seconda spingi il blocco sulla piastra per aprire l'uscita; nella terza prendi l'Ankh, e il gioco finisce. Pipistrelli (2 colpi) e lupi (3 colpi) ti ostacolano; le fosse costano 2 cuori.
+
+**Cosa mostra, tecnicamente**
+- **Isometria:** ogni stanza è una griglia 8×8 di caselle da 32×16 pixel; la posizione è in 1/16 di casella e lo schermo si ricava da `x = 128 + pi − pj`, `y = 72 + (pi + pj) / 2`.
+- **Dietro e davanti:** Lara passa dietro a pilastri e blocchi grazie alla priorità degli sprite.
+- **Aggiornamenti della PPU:** durante il gioco si scrivono solo piccole liste di tile nel vblank; le stanze si caricano a schermo spento.
+- **Tile:** 249 tile di sfondo su 256 e 85 di sprite, nel blocco `; <GFX>`, quindi si ritoccano con l'**Editor tile**.
+
+**Dati da modificare a mano** (tutti nel sorgente)
+
+| Cosa | Etichette |
+|---|---|
+| Colori delle stanze / degli sprite | `r0_pal`, `r1_pal`, `r2_pal` / `sprpal` |
+| Mappa di collisione 8×8 (0 libero, 1 pilastro, 2 fossa, 3 vuoto, 4 piastra, 5 blocco) | `r0_map`, `r1_map`, `r2_map` |
+| Nemici e oggetti di ogni stanza | `rN_en`, `rN_it` |
+| Vita dei nemici, salto, punto di partenza | `ehp0`, `jztab`, `sp_i` / `sp_j` / `sp_f` |
+
+**Limiti da sapere**
+- Le scenografie delle stanze sono nametable compresse (`rN_nt`), **non** nel formato dell'**Editor schermate**: se premi «Applica al codice» lì, viene scritto un blocco `; <NT>` che il gioco non usa. Per rifare una stanza serve rigenerare i dati.
+- I tile di sfondo sono quasi finiti (249/256).
+- Su una vera NES può sfarfallare quando troppi sprite stanno sulla stessa riga (qui il limite di 8 per riga non è emulato).
+- Il gioco è stato collaudato con una versione precedente di NES IDE e con test automatici, **ma non con questa versione, né in un browser vero o su NES reale**. Usa solo direttive di base (`.org`, `.byte`, `.word`, `.mirror`, `.chr`, `.tile`), quindi dovrebbe assemblare; se non succede, segnala il numero di riga che compare nella console.
+
+**Idee per continuare:** altre stanze e un secondo livello, una leva e una trappola a spuntoni, un'animazione di morte, la musica (appena ci sarà un driver audio).
 
 ## Cosa manca (onestamente)
 
