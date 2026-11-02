@@ -4,12 +4,12 @@ Un ambiente di sviluppo per la NES (Nintendo Entertainment System) in **un solo 
 Dentro c'è tutto quello che serve per scrivere, assemblare, provare ed esportare un gioco.
 
 > **Stato del progetto:** è in costruzione. Funziona per scrivere e provare giochi in assembly 6502, ma non è ancora completo come un ambiente professionale (vedi «Cosa manca»).
-
+> Il codice è stato collaudato con test automatici (CPU, assembler, mapper, grafica), ma **non è mai stato aperto in un browser vero**: se un pulsante non risponde, è un difetto da segnalare.
 
 ## Come si usa
 
 1. Apri `NES_IDE.html` in un browser moderno (Chrome, Edge, Firefox, Safari).
-2. Scegli un esempio dal menu **Esempi** (c'è anche un gioco completo: vedi «Esempio completo: Tomb Raider») oppure scrivi il tuo codice a sinistra.
+2. Scegli un esempio dal menu **Esempi** oppure scrivi il tuo codice a sinistra.
 3. Premi **▶ RUN** (o `F9`, o `Ctrl+Invio`): il codice viene assemblato e il gioco parte nello schermo a destra.
 4. Clicca sullo schermo per usare la tastiera: **frecce**, **Z** = B, **X** = A, **Invio** = Start, **Shift** = Select.
 5. **↓ .NES** scarica la ROM, che funziona anche in altri emulatori.
@@ -25,19 +25,52 @@ Gli errori compaiono nella console sotto l'editor, con file e riga; cliccando su
 - Salvataggio e apertura di tutto il progetto in **.zip**.
 
 **Emulatore NES**
-- CPU 6502 verificata istruzione per istruzione con il test standard `nestest` (istruzioni ufficiali).
-- PPU con sfondo, sprite (8×8 e 8×16), scroll che può cambiare **riga per riga**, sprite 0 hit approssimato.
-- Audio: due onde quadre, triangolo e rumore.
-- **Mapper:** 0 (NROM), 1 (MMC1, modo PRG standard), 2 (UxROM), 3 (CNROM), con più banchi PRG/CHR.
+- CPU 6502 verificata istruzione per istruzione con il test standard `nestest`: **tutte le 8991 istruzioni** del log di riferimento, comprese le istruzioni **non ufficiali** (LAX, SAX, DCP, ISB, SLO, RLA, SRE, RRA e NOP varie).
+- PPU con sfondo, sprite (8×8 e 8×16), scroll che può cambiare **riga per riga**, sprite 0 hit approssimato, **limite di 8 sprite per riga** con flag di overflow, modalità **NTSC o PAL** (menu in alto).
+- Audio: due onde quadre (con **sweep**), triangolo, rumore e **canale DMC** (campioni), approssimati con Web Audio.
+- **Mapper:** 0 (NROM), 1 (MMC1, modo PRG standard), 2 (UxROM), 3 (CNROM) e **4 (MMC3)** con banchi PRG da 8 KB, banchi CHR da 1 KB e **interrupt di scanline (IRQ)**, con più banchi PRG/CHR.
+
+**Musica**
+- **Tracker** a 4 colonne (quadra 1, quadra 2, triangolo, rumore), fino a 120 righe: suoni le note con la tastiera, scegli volume e duty, ascolti l'anteprima e premi «Applica al codice».
+- **Driver 6502 pronto** (`music_init`, `music_update`): lo inserisci con un pulsante, chiami `jsr music_init` una volta e `jsr music_update` a ogni NMI. Il driver reale e l'anteprima producono gli stessi registri APU (verificato).
 
 **Editor grafici**
 - **Tile:** disegni i 512 tile (8×8, 4 colori), con specchio, copia e incolla, scelta dei colori NES, anteprima nel gioco in esecuzione.
 - **Importa immagine:** converte un PNG/JPG nei 4 colori della palette scelta (fino a 16 tile di larghezza).
-- **Schermate:** disegni lo sfondo (32×30 tile) con i colori (palette per blocchi 2×2).
+- **Schermate e livelli:** disegni lo sfondo (32×30 tile) con i colori (palette per blocchi 2×2). Con **＋ Schermata** (fino a 4) costruisci un livello largo, e l'editor genera da solo i dati per lo scorrimento orizzontale (colonne e attributi, blocco `<LV>`). L'esempio «Livello con scorrimento» contiene il motore pronto: `put_col` carica le colonne mentre la telecamera si muove, avanti e indietro.
 - **Sprite composti e animazioni:** componi personaggi con più tile, con specchio, e crei i frame di un'animazione. Una rotina `draw_meta` pronta li copia negli sprite.
 
 **Debugger**
 - Registri, istruzioni disassemblate dal PC (con il nome dell'etichetta), memoria, passo singolo, un frame alla volta, breakpoint.
+
+## Strumenti dell'editor
+
+- **↶ ANNULLA:** annulla l'ultimo «Applica al codice» (tile, schermate, sprite) o «Sostituisci tutto» (fino a 30 passi). Per il testo digitato vale l'annulla normale del browser.
+- **Cerca / sostituisci** sopra l'editor (senza distinzione tra maiuscole e minuscole, nel file aperto) e **Vai a simbolo…** per saltare a un'etichetta anche in un altro file.
+- **Debugger:** oltre a registri e memoria, mostra la **palette PPU** (32 colori) e la lista degli **sprite (OAM)**.
+- **💾 STATO / ⏏ CARICA STATO:** salva e ricarica lo stato dell'emulatore. **⏪ RIAVVOLGI:** tieni premuto per tornare indietro negli ultimi ~20 secondi.
+- **📷** salva uno screenshot PNG; **⏺ REC** registra un video `.webm` (non GIF).
+- **Controlli touch** sullo schermo (croce, A, B, Select, Start): compaiono sui dispositivi con touch.
+- **Avvisi del compilatore** (⚠ in giallo nella console, cliccabili): valori fuori da un byte (`lda #300`, `.byte 999`) ed etichette mai usate. Gli errori (✖) indicano file e riga.
+- **Viewer dei nametable** nel Debugger: i 4 nametable della PPU con il mirroring e un riquadro rosso sull'area visibile.
+- **Trova in tutti** cerca in ogni file del progetto e porta alla riga cliccando.
+- **? GUIDA:** guida rapida integrata.
+
+## Esempi inclusi (menu «Esempi»)
+
+| Esempio | Cosa mostra |
+|---|---|
+| Sprite con la croce direzionale | il minimo: palette, tile, sprite, controller, NMI |
+| Modello vuoto | punto di partenza |
+| Schermata | uno sfondo disegnato con l'editor schermate |
+| Progetto multi-file con macro | `main.asm` + `nes.inc` (macro) + `gfx.asm` |
+| Livello con scorrimento | 4 schermate disegnate con l'editor, scorrimento orizzontale con le frecce, colonne caricate al volo (anche all'indietro) |
+| Musica | un brano di prova (melodia, basso, triangolo, batteria) suonato dal driver |
+| **Pong** | tu (frecce su/giù) contro la CPU, rimbalzi, punteggio a cifre, azzeramento a 10 |
+| **Meteore** | schiva le rocce con sinistra/destra, punteggio a due cifre, game over (nave rossa) e Start per ricominciare |
+
+Pong e Meteore sono progetti con più file (`main.asm`, `nes.inc`, `font.asm`) e usano macro, etichette locali `@` e `.rept`: sono un buon punto di partenza da modificare.
+Sono stati verificati con test automatici sulla logica (movimento, rimbalzi, collisioni, punti, game over), **ma non giocati con le mani**: come «sensazione di gioco» (velocità, difficoltà) sono da provare.
 
 ## Come lavorano gli editor con il codice
 
@@ -46,7 +79,9 @@ Gli editor non salvano in file separati: scrivono nel sorgente blocchi riconosci
 | Blocco | Cosa contiene | Come usarlo |
 |---|---|---|
 | `; <GFX> … ; </GFX>` | righe `.chr` e `.tile` con i tile | caricati nella CHR della ROM |
-| `; <NT> … ; </NT>` | `screen` (1024 byte) e `screen_pal` (16 byte) | copiali nella PPU (vedi esempio «Schermata») |
+| `; <NT> … ; </NT>` | `screen` (1024 byte), `screen_pal` (16 byte) ed eventuali `screen_1…` | copiali nella PPU (vedi esempio «Schermata») |
+| `; <MU> … ; </MU>` | `MUS_SPEED`, `MUS_ROWS`, `music_ch0…3` (2 byte per riga: nota, registro) e le tabelle delle note | letti dal driver musicale |
+| `; <LV> … ; </LV>` | `LEVEL_W`, `LEVEL_MAXCAM`, `level_colptr`, `level_cols`, `level_attr` (generato, non modificarlo) | usato dal motore di scorrimento |
 | `; <MS> … ; </MS>` | `meta_0…` e `meta_table` | `draw_meta` li disegna negli sprite |
 
 Gli editor applicano le modifiche al codice quando premi **Applica al codice** o **RUN**. I blocchi si scrivono nel file principale (★) e prima del `.org $FFFA` dei vettori.
@@ -75,56 +110,16 @@ Gli editor applicano le modifiche al codice quando premi **Applica al codice** o
 
 Ricorda di mettere i vettori a `.org $FFFA` con `.word nmi, reset, 0`.
 
-## Esempio completo: Tomb Raider: The Prophecy (demake)
-
-Un piccolo gioco d'avventura con la **visuale isometrica** di *Tomb Raider: The Prophecy* (GBA), in un solo file `.asm` (mapper 0, 32 KB PRG + 8 KB CHR, nessun audio). È giocabile dall'inizio alla fine: tre stanze, finale compreso. Serve da esempio di un progetto vero: apri il sorgente, leggilo, cambialo.
-
-**Per provarlo:** scegline il file `tomb_raider.asm` (o l'esempio nel menu), premi **▶ RUN**, clicca sullo schermo e premi **Invio** al titolo. `tomb_raider.nes` è la ROM già assemblata, per altri emulatori.
-
-| Tasto | Azione |
-|---|---|
-| Frecce | Muovi Lara in 8 direzioni (le diagonali seguono gli assi delle caselle) |
-| **X** (A) | Salta nella direzione in cui guarda |
-| **Z** (B) | Spara |
-| Camminare contro un blocco | Lo spinge (tieni premuto giù+destra) |
-| **Invio** (Start) | Inizia / ricomincia |
-
-**Come si gioca, in breve.** Hai 6 cuori; le medipack ne ridanno 3. Nella prima stanza salta la fossa e prendi la chiave per aprire la porta; nella seconda spingi il blocco sulla piastra per aprire l'uscita; nella terza prendi l'Ankh, e il gioco finisce. Pipistrelli (2 colpi) e lupi (3 colpi) ti ostacolano; le fosse costano 2 cuori.
-
-**Cosa mostra, tecnicamente**
-- **Isometria:** ogni stanza è una griglia 8×8 di caselle da 32×16 pixel; la posizione è in 1/16 di casella e lo schermo si ricava da `x = 128 + pi − pj`, `y = 72 + (pi + pj) / 2`.
-- **Dietro e davanti:** Lara passa dietro a pilastri e blocchi grazie alla priorità degli sprite.
-- **Aggiornamenti della PPU:** durante il gioco si scrivono solo piccole liste di tile nel vblank; le stanze si caricano a schermo spento.
-- **Tile:** 249 tile di sfondo su 256 e 85 di sprite, nel blocco `; <GFX>`, quindi si ritoccano con l'**Editor tile**.
-
-**Dati da modificare a mano** (tutti nel sorgente)
-
-| Cosa | Etichette |
-|---|---|
-| Colori delle stanze / degli sprite | `r0_pal`, `r1_pal`, `r2_pal` / `sprpal` |
-| Mappa di collisione 8×8 (0 libero, 1 pilastro, 2 fossa, 3 vuoto, 4 piastra, 5 blocco) | `r0_map`, `r1_map`, `r2_map` |
-| Nemici e oggetti di ogni stanza | `rN_en`, `rN_it` |
-| Vita dei nemici, salto, punto di partenza | `ehp0`, `jztab`, `sp_i` / `sp_j` / `sp_f` |
-
-**Limiti da sapere**
-- Le scenografie delle stanze sono nametable compresse (`rN_nt`), **non** nel formato dell'**Editor schermate**: se premi «Applica al codice» lì, viene scritto un blocco `; <NT>` che il gioco non usa. Per rifare una stanza serve rigenerare i dati.
-- I tile di sfondo sono quasi finiti (249/256).
-- Su una vera NES può sfarfallare quando troppi sprite stanno sulla stessa riga (qui il limite di 8 per riga non è emulato).
-- Il gioco è stato collaudato con una versione precedente di NES IDE e con test automatici, **ma non con questa versione, né in un browser vero o su NES reale**. Usa solo direttive di base (`.org`, `.byte`, `.word`, `.mirror`, `.chr`, `.tile`), quindi dovrebbe assemblare; se non succede, segnala il numero di riga che compare nella console.
-
-**Idee per continuare:** altre stanze e un secondo livello, una leva e una trappola a spuntoni, un'animazione di morte, la musica (appena ci sarà un driver audio).
-
 ## Cosa manca (onestamente)
 
 Questo non è ancora un ambiente completo. Mancano:
-- **mappe dei livelli** con più schermate e scorrimento;
-- **editor musicale** (tracker) e un driver audio da inserire nel gioco;
-- **audio fedele:** sweep delle onde quadre e canale DMC (campioni);
+- **scorrimento verticale** e livelli più larghi di 4 schermate (oggi solo orizzontale, max 4);
+- **audio ancora approssimato:** niente interruzioni del DMC, un solo brano per progetto, niente strumenti con inviluppo personalizzato, nessun effetto (vibrato, slide);
 - **linguaggio ad alto livello** per la NES (oggi si scrive solo assembly);
-- **emulatore più fedele:** limite di 8 sprite per riga, MMC3 e altri mapper, istruzioni non ufficiali, NTSC/PAL, stati salvati e riavvolgimento;
-- **strumenti dell'editor:** ricerca, annulla dopo «Applica al codice», pannello dei problemi, viewer di PPU/OAM, screenshot e GIF, controlli touch, guida integrata.
+- **emulatore ancora semplificato:** niente temporizzazione al ciclo della PPU (lo scroll cambia per riga, non per pixel), sprite 0 hit approssimato, MMC1 solo nel modo PRG standard, mancano altri mapper (MMC5, VRC…), le tabelle di note del tracker e del DMC sono quelle NTSC anche in modalità PAL;
+- **altri strumenti:** esportazione GIF, viewer dei pattern table, sostituzione in tutto il progetto, avvisi più numerosi del compilatore;
 
 ## Collaudo
 
-Test automatici eseguiti con Node (non in un browser): confronto della CPU con il log di riferimento di `nestest` (5003 istruzioni), assembler e modi di indirizzamento, mapper 1/2/3, scroll per riga, debugger e breakpoint, logica dei registri audio, macro/include/`.if`/etichette locali, zip (compreso uno zip compresso creato altrove), importazione immagini e rotina `draw_meta` eseguita nell'emulatore.
-**Non verificati:** l'aspetto e i clic nell'interfaccia, il suono reale, la compatibilità con giochi commerciali e con hardware vero.
+Test automatici eseguiti con Node (non in un browser; avvisi, viewer nametable e ricerca in tutti i file inclusi; decodifica DMC, sweep e driver musicale contro l'anteprima inclusi; stati salvati, annulla, cerca/sostituisci, vai a simbolo e viewer inclusi): confronto della CPU con il log di riferimento di `nestest` (5003 istruzioni), assembler e modi di indirizzamento, mapper 1/2/3, scroll per riga, debugger e breakpoint, logica dei registri audio, macro/include/`.if`/etichette locali, zip (compreso uno zip compresso creato altrove), importazione immagini e rotina `draw_meta` eseguita nell'emulatore.
+**Non verificati:** l'aspetto e i clic nell'interfaccia (compresi touch, screenshot e registrazione video), il suono reale (tracker, sweep, DMC), il comportamento con giochi commerciali, la compatibilità con giochi commerciali e con hardware vero.
