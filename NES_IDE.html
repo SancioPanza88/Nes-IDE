@@ -1,0 +1,1955 @@
+<!DOCTYPE html><html lang="it"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>NES IDE</title>
+<style>
+:root{--bg:#1d1a22;--pn:#2a2530;--dk:#141116;--rd:#e4002b;--tx:#d8d2c4;--dm:#8d8698;--ok:#6fdc6f;--er:#ff6a5c;--ac:#f5c542;--cy:#6cc7ff;--f:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;color-scheme:dark}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:var(--dk);color:var(--tx);font:13px var(--f);overflow:hidden}
+#app{display:flex;flex-direction:column;height:100%}
+header{display:flex;align-items:baseline;gap:12px;padding:7px 12px;background:var(--rd);color:#fff}
+header b{font-size:17px;letter-spacing:1px}header span{opacity:.85;font-size:11px}
+#tb{display:flex;flex-wrap:wrap;gap:6px;padding:6px 10px;background:var(--pn);border-bottom:2px solid #000}
+button,select{font:inherit;background:#3a3342;color:var(--tx);border:1px solid #544a60;padding:4px 10px;cursor:pointer;border-radius:3px}
+button:hover{background:#4a4054}:focus-visible{outline:2px solid var(--ac)}
+.run{background:#1f7a3a;border-color:#3fbf63;color:#fff}
+#main{flex:1;display:flex;min-height:0}
+#L{flex:1;display:flex;flex-direction:column;min-width:0}
+#ed{flex:1;display:flex;min-height:0;background:var(--bg)}
+#ln,#hl,#ta{font:14px/20px var(--f);margin:0;padding:8px 8px 60px;tab-size:2}
+#ln{width:46px;text-align:right;color:var(--dm);background:var(--dk);overflow:hidden;white-space:pre;user-select:none}
+#w{position:relative;flex:1;overflow:hidden}
+#hl,#ta{position:absolute;inset:0;width:100%;height:100%;white-space:pre;overflow:auto;border:0}
+#hl{overflow:hidden;pointer-events:none}
+#ta{background:transparent;color:transparent;caret-color:#fff;resize:none;outline:0}
+#hl i{font-style:normal}.c{color:#7d7690}.d{color:var(--cy)}.n{color:#ff9a70}.l{color:var(--ok)}.m{color:var(--ac)}
+#con{height:150px;overflow:auto;background:#0d0b0f;border-top:2px solid #000;padding:6px 10px;white-space:pre-wrap;color:var(--dm)}
+#con .ok{color:var(--ok)}#con .er{color:var(--er)}#con .wn{color:var(--ac)}
+#R{width:540px;display:flex;flex-direction:column;gap:8px;padding:10px;background:var(--pn);border-left:2px solid #000;overflow:auto}
+#scr{width:100%;max-width:512px;aspect-ratio:256/240;image-rendering:pixelated;background:#000;display:block;margin:0 auto;outline:2px solid #000}
+#scr:focus{outline-color:var(--rd)}
+#chr{width:100%;max-width:512px;aspect-ratio:2;image-rendering:pixelated;background:#000;margin:0 auto;display:block}
+#R p,#R details{font-size:12px;color:var(--dm);line-height:1.5}#R summary{cursor:pointer;color:var(--tx)}
+#ge{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-start;margin:8px 0}
+#sheet{width:100%;max-width:512px;aspect-ratio:2;image-rendering:pixelated;background:#000;cursor:pointer}
+#big{width:192px;height:192px;image-rendering:pixelated;cursor:crosshair;touch-action:none;background:#000}
+#pk{width:256px;height:64px;image-rendering:pixelated;cursor:pointer;display:block;margin-top:6px}
+#sw{display:flex;gap:4px}#sw button{width:46px;height:32px;color:#fff;text-shadow:0 0 3px #000,0 0 3px #000}
+#gb,#ngb{display:flex;flex-wrap:wrap;gap:4px;width:100%}#gb button,#ngb button{padding:3px 8px}
+#ntc{width:100%;max-width:512px;aspect-ratio:256/240;image-rendering:pixelated;background:#000;cursor:crosshair;touch-action:none;display:block}
+.bt{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:6px 0}.bt input{font:inherit;background:var(--dk);color:var(--tx);border:1px solid #544a60;padding:2px 4px}#dv{background:var(--dk);padding:8px;overflow:auto;font-size:12px;color:var(--tx);line-height:1.4}
+#tabs{display:flex;gap:2px;background:var(--dk);padding:4px 6px 0;overflow-x:auto;flex:none}#tabs button{border-radius:3px 3px 0 0;padding:3px 10px;white-space:nowrap}#tabs .on{background:var(--bg);border-bottom-color:var(--bg);color:#fff}
+#msc{width:100%;max-width:288px;image-rendering:pixelated;cursor:crosshair;display:block;background:#000}
+#fbar{display:flex;gap:4px;padding:4px 6px;background:var(--pn);flex:none;flex-wrap:wrap}#fbar input{font:inherit;background:var(--dk);color:var(--tx);border:1px solid #544a60;padding:2px 6px;min-width:0}#fbar select{max-width:150px}
+#pw{display:flex;flex-wrap:wrap;width:256px;margin:6px 0}#pw i{width:16px;height:16px;display:block;border:1px solid #000;box-sizing:border-box}#ov{max-height:160px;overflow:auto;font-size:11px;color:var(--dm)}
+#tc{display:flex;justify-content:space-between;align-items:center;padding:4px 8px;user-select:none;touch-action:none}.dp{display:grid;grid-template-columns:repeat(3,46px);grid-template-rows:repeat(3,46px);gap:2px}.ab{display:flex;gap:6px}#tc button{min-height:46px;min-width:46px}
+@media(pointer:fine){#tc{display:none}}
+#mt{max-height:240px;overflow:auto;background:var(--dk);outline:0}#mt table{border-collapse:collapse;font-size:12px}#mt td,#mt th{padding:1px 6px;white-space:pre;cursor:pointer;border-right:1px solid #2a2530}#mt th{color:var(--dm);font-weight:400}#mt tr.b td{border-top:1px solid #3a3342}#mt td.s{background:var(--rd);color:#fff}#mu_pos{color:var(--dm);margin-left:6px}
+#ntv{width:100%;max-width:512px;image-rendering:pixelated;display:block;background:#000;margin-top:6px}
+dialog{background:var(--pn);color:var(--tx);border:2px solid var(--rd);max-width:640px;max-height:80vh;overflow:auto;padding:12px 16px}dialog::backdrop{background:#000a}dialog h3{margin-bottom:6px}dialog p{margin:6px 0;line-height:1.5}dialog code{color:var(--ac)}
+#npb{display:flex;gap:4px;margin:6px 0}
+@media(max-width:900px){html,body{overflow:auto}#app{height:auto}#main{flex-direction:column}#ed{height:55vh;flex:none}#R{width:100%;border-left:0}}
+</style>
+<div id="app">
+<header><b>NES IDE</b><span>assembler 6502 · emulatore integrato · un solo file</span></header>
+<div id="tb">
+<button class="run" id="run" title="Assembla ed esegui (F9 o Ctrl+Invio)">▶ RUN</button>
+<button id="pause">⏸ PAUSA</button><button id="rst">↺ RESET</button><button id="mute">🔊 AUDIO</button><button id="undo" title="Annulla l’ultimo «Applica al codice» o «Sostituisci»">↶ ANNULLA</button><button id="svs" title="Salva lo stato dell’emulatore">💾 STATO</button><button id="lds">⏏ CARICA STATO</button><button id="rwd" title="Tieni premuto per riavvolgere (ultimi 20 secondi)">⏪ RIAVVOLGI</button><button id="shot" title="Salva uno screenshot PNG">📷</button><button id="hlp" title="Guida rapida">? GUIDA</button><button id="rec" title="Registra un video .webm">⏺ REC</button><select id="reg" title="Standard video: NTSC 60 Hz o PAL 50 Hz"><option value="0">NTSC</option><option value="1">PAL</option></select>
+<button id="nes" title="Scarica la ROM per altri emulatori o per una vera NES">↓ .NES</button>
+<button id="open">📂 APRI</button><button id="save">💾 SALVA FILE</button><button id="zip" title="Esporta tutto il progetto in un .zip">📦 ZIP</button>
+<select id="ex"><option value="">Esempi…</option><option value="0">Sprite con la croce direzionale</option><option value="1">Modello vuoto</option><option value="2">Schermata (editor schermate)</option><option value="3">Progetto multi-file con macro</option><option value="4">Gioco: Pong (tu contro la CPU)</option><option value="5">Gioco: Meteore (schiva le rocce)</option><option value="6">Livello con scorrimento (4 schermate)</option><option value="7">Musica: brano di prova (tracker)</option><option value="8">Livello verticale (4 schermate)</option></select>
+</div>
+<div id="main">
+<div id="L"><div id="tabs"></div><div id="fbar"><input id="fq" placeholder="Cerca" size="14"><input id="fr" placeholder="Sostituisci con" size="14"><button id="f_n">Trova</button><button id="f_a" title="Cerca in tutti i file del progetto">Trova in tutti</button><button id="f_r">Sostituisci tutto</button><select id="sy"><option value="">Vai a simbolo…</option></select></div><div id="ed"><pre id="ln"></pre><div id="w"><pre id="hl"></pre><textarea id="ta" spellcheck="false" wrap="off" aria-label="Codice assembly"></textarea></div></div><div id="con"></div></div>
+<div id="R">
+<canvas id="scr" width="256" height="240" tabindex="0" aria-label="Schermo NES"></canvas>
+<p id="st">Premi RUN. Clicca lo schermo per giocare: frecce, Z = B, X = A, Invio = Start, Shift = Select.</p>
+<div id="tc"><div class="dp"><button data-b="16" style="grid-area:1/2">▲</button><button data-b="64" style="grid-area:2/1">◀</button><button data-b="128" style="grid-area:2/3">▶</button><button data-b="32" style="grid-area:3/2">▼</button></div><div class="ab"><button data-b="4">SEL</button><button data-b="8">START</button><button data-b="2">B</button><button data-b="1">A</button></div></div>
+<details id="gfx" open><summary>Editor tile</summary>
+<div id="ge"><canvas id="sheet" width="256" height="128" title="Clicca un tile: tabella 0 a sinistra, tabella 1 a destra"></canvas>
+<canvas id="big" width="128" height="128"></canvas>
+<div><div id="sw"></div><canvas id="pk" width="256" height="64" title="Scegli il colore NES per lo slot selezionato"></canvas><p id="tn"></p></div>
+<div id="gb"><button id="g_clr">Svuota</button><button id="g_h" title="Specchia in orizzontale">↔</button><button id="g_v" title="Specchia in verticale">↕</button><button id="g_cp">Copia</button><button id="g_ps">Incolla</button><button id="g_rl" title="Rilegge i tile dal codice">↻ Dal codice</button><button id="g_ap" title="Scrive i tile nel sorgente (lo fa anche RUN)">Applica al codice</button><button id="g_pl" title="Inserisce una riga .byte con i 4 colori scelti">Inserisci palette</button><button id="g_im" title="Converte un PNG/JPG nei 4 colori della palette scelta, a partire dal tile selezionato">Importa immagine</button><input type="file" id="fim" accept="image/*" hidden></div></div>
+<p>Disegna con il mouse. Lo slot 0 è il colore di sfondo. Le modifiche entrano nel sorgente con «Applica al codice» o con RUN, e si vedono subito nel gioco in esecuzione.</p></details>
+<details id="nte" open><summary>Editor schermata</summary>
+<div id="npb"></div>
+<canvas id="ntc" width="256" height="240" title="Clicca o trascina per disegnare lo sfondo"></canvas>
+<div id="ngb"><button id="n_m">Modo: tile</button><button id="n_clr">Svuota</button><button id="n_pv" title="Schermata precedente">◀</button><span id="n_i"></span><button id="n_nx" title="Schermata successiva">▶</button><button id="n_add" title="Aggiunge una schermata a destra (max 4)">＋ Schermata</button><button id="n_del">− Schermata</button><button id="n_ori" title="Direzione dello scorrimento del livello">Livello: orizzontale</button><button id="n_ap" title="Scrive schermata e palette nel sorgente (lo fa anche RUN)">Applica al codice</button></div>
+<p>Modo tile: disegna con il tile scelto nell’editor tile. Modo colore: assegna la palette (0–3) a blocchi di 2×2 tile; i colori delle palette si cambiano nell’editor tile. Nel codice trovi le etichette <code>screen</code> e <code>screen_pal</code> da copiare nella PPU (vedi l’esempio «Schermata»).</p></details>
+<details id="mse" open><summary>Sprite composti e animazioni</summary>
+<div id="msf" class="bt"></div>
+<canvas id="msc" width="288" height="288" title="Clicca una cella per mettere il tile scelto; clicca di nuovo per toglierlo"></canvas>
+<div class="bt"><button id="m_fh">Specchio ↔: no</button><button id="m_fv">Specchio ↕: no</button><button id="m_nf">＋ Frame</button><button id="m_df">✕ Frame</button><button id="m_play">▶ Anima</button></div>
+<div class="bt"><button id="m_ap" title="Scrive i frame nel sorgente (lo fa anche RUN)">Applica al codice</button><button id="m_rt" title="Inserisce la rotina che copia un frame negli sprite">Inserisci draw_meta</button></div>
+<p>Ogni cella è un tile 8×8; la cella con il bordo rosso è il punto di riferimento. Il tile e la palette (0–3) vengono dall’editor tile e da quello schermata. Nel codice trovi <code>meta_0…</code> e <code>meta_table</code>.</p></details>
+<details id="mus" open><summary>Musica (tracker)</summary>
+<div class="bt"><label>Velocità <input id="mu_sp" type="number" min="1" max="30" value="6" style="width:48px"></label><label>Righe <select id="mu_n"><option>16</option><option selected>32</option><option>64</option><option>96</option><option>120</option></select></label><label>Ottava <select id="mu_o"><option>1</option><option>2</option><option selected>3</option><option>4</option><option>5</option><option>6</option></select></label><label>Vol <select id="mu_v"></select></label><label>Duty <select id="mu_d"><option>0</option><option>1</option><option selected>2</option><option>3</option></select></label></div>
+<div class="bt"><button id="mu_play">▶ Ascolta</button><button id="mu_ap" title="Scrive il brano nel sorgente (lo fa anche RUN)">Applica al codice</button><button id="mu_drv" title="Inserisce music_init e music_update">Inserisci driver</button><button id="mu_clr">Svuota</button><span id="mu_pos"></span></div>
+<div id="mt" tabindex="0"></div>
+<p>Clicca una cella e suona con la tastiera: Z S X D C V G B H N J M = Do…Si (ottava a scelta), «,» = Do successivo, Spazio = fine nota, Canc = cancella, frecce per muoverti. Colonne: quadra 1, quadra 2, triangolo, rumore (per il rumore la nota sceglie il tipo, 1–16). Nel gioco: <code>jsr music_init</code> una volta e <code>jsr music_update</code> a ogni NMI.</p></details>
+<details id="dbg"><summary>Debugger</summary>
+<div class="bt"><button id="d_s">Passo</button><button id="d_f">Frame</button><button id="d_c">Continua</button>
+<label>Breakpoint $<input id="dbp" size="5" placeholder="8000"></label><label>Memoria $<input id="dm" size="5" value="0000"></label></div>
+<pre id="dv">Premi RUN, poi metti in pausa per vedere registri, istruzioni e memoria.</pre><div id="pw" title="Palette PPU ($3F00-$3F1F)"></div><pre id="ov"></pre><canvas id="ntv" width="512" height="480" title="Nametable PPU (con mirroring); il riquadro rosso è l’area visibile"></canvas></details>
+<details><summary>Sintassi</summary>
+<p>Etichette <code>nome:</code> · costanti <code>NOME=$2000</code> · <code>.org</code> <code>.byte</code> <code>.word</code> <code>.res</code> · <code>#&lt;x</code> <code>#&gt;x</code> byte basso/alto · <code>.mirror v|h</code><br>
+Grafica: <code>.chr N</code> sceglie il tile N (0–255 tabella 0, 256–511 tabella 1), poi 8 righe <code>.tile 01230123</code> (cifre 0–3 o <code>.</code>).<br>
+La ROM è NROM 32 KB PRG + 8 KB CHR ($8000–$FFFF): ricorda i vettori in <code>.org $FFFA</code>.<br>Mapper: <code>.mapper 0|1|2|3|4</code> · <code>.prgbanks N</code> (16 KB) · <code>.chrbanks N</code> (8 KB) · <code>.bank K</code> sceglie il banco da scrivere a $8000; l’ultimo banco è fisso a $C000 (con MMC3 i banchi si scelgono in unità da 8 KB; <code>.mapper 4</code>).<br>Progetti: schede in alto (＋ nuovo, ✎ rinomina, ✕ elimina; ★ = file principale) · <code>.include "file"</code> · <code>.macro nome a,b</code> … <code>.endmacro</code> · <code>.rept N</code> · <code>.if</code>/<code>.else</code>/<code>.endif</code> · etichette locali <code>@nome</code> · 📦 ZIP salva tutto.</p></details>
+</div></div></div>
+<dialog id="hd"><h3>Guida rapida</h3>
+<p><b>Flusso:</b> scrivi il codice a sinistra, premi <code>RUN</code> (F9). Gli editor di tile, schermate, sprite composti e musica scrivono nel sorgente quando premi «Applica al codice» o RUN.</p>
+<p><b>Gioco:</b> frecce, <code>Z</code> = B, <code>X</code> = A, Invio = Start, Shift = Select (clicca prima sullo schermo).</p>
+<p><b>Assembler:</b> <code>.org</code> <code>.byte</code> <code>.word</code> <code>.res</code> <code>.mirror</code> <code>.mapper</code> <code>.prgbanks</code> <code>.chrbanks</code> <code>.bank</code> <code>.chr</code>/<code>.tile</code> <code>.include</code> <code>.macro</code>/<code>.endmacro</code> <code>.rept</code> <code>.if</code>/<code>.else</code>/<code>.endif</code>, etichette locali <code>@nome</code>. I vettori vanno in <code>.org $FFFA</code>.</p>
+<p><b>Progetti:</b> schede in alto, ★ = file principale; 📦 ZIP salva tutto. Il pulsante «Trova in tutti» cerca in ogni file.</p>
+<p><b>Messaggi:</b> ✖ errori (cliccali per andare alla riga) e ⚠ avvisi (valori fuori da un byte, etichette mai usate).</p>
+<p><b>Debug:</b> pannello Debugger (passo, frame, breakpoint, memoria), palette, sprite e nametable. ⏪ riavvolge, 💾 salva lo stato.</p>
+<p><b>Mapper:</b> 0, 1, 2, 3, 4 (MMC3 con IRQ). NTSC/PAL dal menu. Il file <code>README.md</code> ha tutti i dettagli.</p>
+<button id="hc">Chiudi</button></dialog>
+<input type="file" id="fi" hidden accept=".asm,.s,.inc,.txt,.nes,.zip">
+<script>
+const $=s=>document.querySelector(s);
+const MD=['c','i','z','zx','zy','a','ax','ay','ix','iy'],T={};
+`ADC - 69 65 75 - 6D 7D 79 61 71
+AND - 29 25 35 - 2D 3D 39 21 31
+CMP - C9 C5 D5 - CD DD D9 C1 D1
+EOR - 49 45 55 - 4D 5D 59 41 51
+LDA - A9 A5 B5 - AD BD B9 A1 B1
+ORA - 09 05 15 - 0D 1D 19 01 11
+SBC - E9 E5 F5 - ED FD F9 E1 F1
+STA - - 85 95 - 8D 9D 99 81 91
+LDX - A2 A6 - B6 AE - BE - -
+LDY - A0 A4 B4 - AC BC - - -
+STX - - 86 - 96 8E - - - -
+STY - - 84 94 - 8C - - - -
+CPX - E0 E4 - - EC - - - -
+CPY - C0 C4 - - CC - - - -
+ASL 0A - 06 16 - 0E 1E - - -
+LSR 4A - 46 56 - 4E 5E - - -
+ROL 2A - 26 36 - 2E 3E - - -
+ROR 6A - 66 76 - 6E 7E - - -
+INC - - E6 F6 - EE FE - - -
+DEC - - C6 D6 - CE DE - - -
+BIT - - 24 - - 2C - - - -`.split('\n').forEach(l=>{const p=l.split(' ');T[p[0]]=p.slice(1).map(x=>x=='-'?-1:parseInt(x,16))});
+const IMP={BRK:0,CLC:0x18,CLD:0xD8,CLI:0x58,CLV:0xB8,DEX:0xCA,DEY:0x88,INX:0xE8,INY:0xC8,NOP:0xEA,PHA:0x48,PHP:8,PLA:0x68,PLP:0x28,RTI:0x40,RTS:0x60,SEC:0x38,SED:0xF8,SEI:0x78,TAX:0xAA,TAY:0xA8,TSX:0xBA,TXA:0x8A,TXS:0x9A,TYA:0x98};
+const BR={BPL:0x10,BMI:0x30,BVC:0x50,BVS:0x70,BCC:0x90,BCS:0xB0,BNE:0xD0,BEQ:0xF0};
+const D=[];for(const m in T)T[m].forEach((o,i)=>{if(o>=0)D[o]=[m,MD[i]]});
+for(const m in IMP)D[IMP[m]]=[m,'n'];for(const m in BR)D[BR[m]]=[m,'r'];D[0x4C]=['JMP','a'];D[0x6C]=['JMP','ind'];D[0x20]=['JSR','a'];
+{const add=(n,o)=>{for(const[op,md]of Object.entries(o))D[+op]=[n,md]};   // istruzioni non ufficiali
+ for(const[n,b]of[['SLO',0],['RLA',0x20],['SRE',0x40],['RRA',0x60],['DCP',0xC0],['ISB',0xE0]])add(n,{[b|3]:'ix',[b|7]:'z',[b|0xF]:'a',[b|0x13]:'iy',[b|0x17]:'zx',[b|0x1B]:'ay',[b|0x1F]:'ax'});
+ add('LAX',{0xA3:'ix',0xA7:'z',0xAF:'a',0xB3:'iy',0xB7:'zy',0xBF:'ay'});add('SAX',{0x83:'ix',0x87:'z',0x8F:'a',0x97:'zy'});add('SBC',{0xEB:'i'});
+ for(const o of[0x1A,0x3A,0x5A,0x7A,0xDA,0xFA])D[o]=['NOP','n'];for(const o of[0x80,0x82,0x89,0xC2,0xE2])D[o]=['NOP','i'];for(const o of[0x04,0x44,0x64])D[o]=['NOP','z'];
+ for(const o of[0x14,0x34,0x54,0x74,0xD4,0xF4])D[o]=['NOP','zx'];D[0x0C]=['NOP','a'];for(const o of[0x1C,0x3C,0x5C,0x7C,0xDC,0xFC])D[o]=['NOP','ax']}
+const MN={JMP:1,JSR:1,...T,...IMP,...BR};
+
+/* ───── assembler ───── */
+function assemble(src,map){
+ const sym={},NB=+(/^\s*\.prgbanks\s+(\d+)/im.exec(src)||[,2])[1],CB=+(/^\s*\.chrbanks\s+(\d+)/im.exec(src)||[,1])[1],MP=+(/^\s*\.mapper\s+(\d+)/im.exec(src)||[,0])[1],prg=new Uint8Array(NB*16384),chr=new Uint8Array(CB*8192),Z=[],warn=[],uses={},ldef={},lines=src.split('\n');
+ let mir=1,pc,p,unk,tn,used=0,bank=0,cs=[];
+ const ev=e=>{e=e.trim();let u='';if(/^[<>]/.test(e)){u=e[0];e=e.slice(1)}
+  e=e.replace(/\$([0-9a-f]+)/gi,'0x$1').replace(/%([01]+)/g,'0b$1').replace(/(?<![\w$%])[A-Za-z_]\w*/g,s=>{if(s in sym){if(p==2)uses[s]=1;return sym[s]}if(p==1){unk=1;return 0}throw Error('simbolo sconosciuto: '+s)});
+  const v=Function('return('+e+')')()|0;return u=='<'?v&255:u=='>'?v>>8&255:v};
+ const put=b=>{if(p==2){used+=b.length;b.forEach((x,i)=>{const q=pc+i;if(q<0x8000||q>0xFFFF)throw Error('indirizzo fuori da $8000-$FFFF');const a=q>=0xC000?(NB-1)*16384+q-0xC000:bank*16384+q-0x8000;if(a>=prg.length)throw Error('banco PRG inesistente');prg[a]=x&255})}pc+=b.length};
+ for(p=1;p<3;p++){pc=0x8000;tn=0;bank=0;cs=[];lines.forEach((raw,n)=>{try{
+  let t=raw.replace(/;.*/,'').trim(),m;
+  if(m=/^\.(if|else|endif)\b\s*(.*)/i.exec(t)){const k=m[1].toLowerCase(),on=cs.every(f=>f.v),T0=cs[cs.length-1];if(k=='if')cs.push({v:on&&!!ev(m[2]),o:on});else if(!T0)throw Error('.'+k+' senza .if');else if(k=='else')T0.v=T0.o&&!T0.v;else cs.pop();return}
+  if(!cs.every(f=>f.v))return;
+  while(m=/^([A-Za-z_]\w*):\s*/.exec(t)){if(p==1){if(m[1] in sym)throw Error('etichetta doppia: '+m[1]);sym[m[1]]=pc;ldef[m[1]]=n}t=t.slice(m[0].length)}
+  if(!t)return;
+  if(m=/^([A-Za-z_]\w*)\s*=\s*(.+)$/.exec(t)){if(p==1)sym[m[1]]=ev(m[2]);return}
+  if(t[0]=='.'){const[,d0,a='']=/^\.(\w+)\s*(.*)$/.exec(t)||[],dr=(d0||'').toLowerCase();
+   if(dr=='org')pc=ev(a);
+   else if(dr=='byte'||dr=='db')put(a.split(',').map(x=>{const v=ev(x);if(p==2&&(v>255||v<-128))warn.push({n,m:'valore '+v+' fuori da un byte'});return v}));
+   else if(dr=='word'||dr=='dw')put(a.split(',').flatMap(x=>{const v=ev(x);return[v&255,v>>8&255]}));
+   else if(dr=='res')put(Array(ev(a)).fill(0));
+   else if(dr=='mirror')mir=/^h/i.test(a)?0:1;
+   else if(dr=='chr')tn=ev(a)*8;
+   else if(dr=='tile'){if(!/^[.0-3]{8}$/.test(a))throw Error('.tile vuole 8 cifre 0-3 (o .)');let b0=0,b1=0;for(const c of a){const v=c=='.'?0:+c;b0=b0<<1|v&1;b1=b1<<1|v>>1}
+    const k=tn>>3<<4;if(k>=chr.length)throw Error('troppi tile per i banchi CHR');chr[k+(tn&7)]=b0;chr[k+8+(tn&7)]=b1;tn++}
+   else if(dr=='bank'){bank=ev(a);pc=0x8000}else if(dr=='prgbanks'||dr=='chrbanks'||dr=='mapper'){}
+   else throw Error('direttiva sconosciuta: .'+d0);
+   return}
+  const[,mn,op='']=/^(\w+)\s*(.*)$/.exec(t)||[];if(!mn)throw Error('sintassi non valida');
+  const U=mn.toUpperCase();let b;
+  if(U in BR){const o=ev(op)-pc-2;if(p==2&&(o<-128||o>127))throw Error('salto troppo lontano ('+o+' byte)');b=[BR[U],o&255]}
+  else if(U in IMP&&!op)b=[IMP[U]];
+  else if(T[U]||U=='JMP'||U=='JSR'){
+   let md,e=op,r;unk=0;
+   if(!op||/^a$/i.test(op))md='c';
+   else if(op[0]=='#'){md='i';e=op.slice(1)}
+   else if(r=/^\((.*),\s*x\)$/i.exec(op)){md='ix';e=r[1]}
+   else if(r=/^\((.*)\)\s*,\s*y$/i.exec(op)){md='iy';e=r[1]}
+   else if(r=/^\((.*)\)$/.exec(op)){md='ind';e=r[1]}
+   else if(r=/^(.*),\s*([xy])$/i.exec(op)){md='a'+r[2].toLowerCase();e=r[1]}
+   else md='a';
+   const v=md=='c'?0:ev(e);if(p==2&&md=='i'&&(v>255||v<-128))warn.push({n,m:'valore immediato '+v+' fuori da un byte'});
+   if(U=='JMP'||U=='JSR'){if(U=='JSR'?md!='a':md!='a'&&md!='ind')throw Error('modo non valido per '+U);b=[U=='JSR'?0x20:md=='ind'?0x6C:0x4C,v&255,v>>8&255]}
+   else{const row=T[U];
+    if(md[0]=='a'){const zp=md.replace('a','z'),zA=row[MD.indexOf(zp)]>=0,aA=row[MD.indexOf(md)]>=0;
+     if(p==1)Z[n]=zA&&(!aA||(!unk&&v>=0&&v<256));if(Z[n])md=zp}
+    const opc=row[MD.indexOf(md)];if(!(opc>=0))throw Error('modo di indirizzamento non valido per '+U);
+    b=md=='c'?[opc]:/^(a|ax|ay)$/.test(md)?[opc,v&255,v>>8&255]:[opc,v&255]}
+  }else throw Error('istruzione sconosciuta: '+mn);
+  put(b);
+ }catch(e){throw Object.assign(Error(e.message),{n:map?map[n][1]:n+1,f:map?map[n][0]:undefined})}})}
+ const rom=new Uint8Array(16+prg.length+chr.length);rom.set([78,69,83,26,NB,CB,mir|(MP&15)<<4,MP&240]);rom.set(prg,16);rom.set(chr,16+prg.length);
+ const wl=[...warn];for(const k in ldef)if(!uses[k]&&!k.includes('__')&&!/^(reset|nmi|irq|screen|meta_|level_|music_|note_|tri_)/.test(k))wl.push({n:ldef[k],m:'etichetta mai usata: '+k});
+ return{rom,sym,used,chr:chr.slice(0,8192),warn:wl.sort((a,b)=>a.n-b.n).map(w=>({n:map?map[w.n][1]:w.n+1,f:map?map[w.n][0]:undefined,m:w.m}))};
+}
+
+/* ───── emulatore NES (CPU 6502 + PPU semplificata, mapper 0, niente audio) ───── */
+const PX=('626262 001FB2 2404C8 5200B2 730076 800024 730B00 522800 244400 005700 005C00 005324 003C76 000000 000000 000000 '+
+'ABABAB 0D57FF 4B30FF 8A13FF BC08D6 D21269 C72E00 9D5400 607B00 209800 00A300 009942 007DB4 000000 000000 000000 '+
+'FFFFFF 53AEFF 9085FF D365FF FF57FF FF5DCF FF7757 FA9E00 BDC700 7AE700 43F611 26EF7E 2CD5F6 4D4D4D 000000 000000 '+
+'FFFFFF B6E1FF CED1FF E9C3FF FFBCFF FFBDF4 FFC6C3 FFD59A E9E681 CEF481 B6FB9A A9FAC3 A9F0F4 B8B8B8 000000 000000').split(' ').map(h=>{const c=parseInt(h,16);return 0xFF000000|(c&255)<<16|(c>>8&255)<<8|c>>16});
+const ram=new Uint8Array(2048),vram=new Uint8Array(2048),oam=new Uint8Array(256),pal=new Uint8Array(32);
+let LN=114,VB=27474,TOT=29868,FT=16.64,CPU=1789773,ovf=0,irqp=0,m4s=0,m4l=0,m4e=0,m4c=0,m4rl=0,m4r=[0,2,4,5,6,7,0,1],pb4=[0,1,2,3],np=2,nc=1,mp=0,pb=0,mr=16,crom,mg=[12,0,0,0],bp_=-1,skipbp=0,SYMS={},prg,chr,mir,A,X,Y,sp,pc,fc,fz,fi,fd,fv,fn,cyc,ctrl,mask,vb,hit,w,va,tv,buf,oa,scx,scy,sh,pad=0,run=0,ROM=null;
+const nt=a=>((mir?a>>10&1:a>>11&1)<<10)|(a&1023);
+const pa=a=>{a&=31;return(a&19)==16?a&15:a};
+function vr(a){a&=0x3fff;if(a<0x2000)return chr[a];if(a<0x3f00)return vram[nt(a)];return pal[pa(a)]}
+function vw(a,v){a&=0x3fff;if(a<0x2000)chr[a]=v;else if(a<0x3f00)vram[nt(a)]=v;else pal[pa(a)]=v&63}
+function rd(a){a&=65535;if(a<0x2000)return ram[a&2047];if(a>=0x8000)return prg[mp==4?pb4[a>>13&3]*8192+(a&8191):mp==1||mp==2?(a>=0xC000?np-1:pb)*16384+(a&16383):(a-0x8000)%prg.length];
+ if(a<0x4000)switch(a&7){
+  case 2:{if(!hit&&(mask&24)&&oam[0]<239&&cyc>(oam[0]+1)*LN&&cyc<240*LN)hit=1;const v=vb<<7|hit<<6|ovf<<5;vb=0;w=0;return v}
+  case 4:return oam[oa];
+  case 7:{const r=va>=0x3f00?vr(va):buf;buf=vr(va);va=va+(ctrl&4?32:1)&0x3fff;return r}
+  default:return 0}
+ if(a==0x4016){const r=sh&1;sh=sh>>1|128;return r|64}
+ if(a==0x4015)return lc.reduce((s,x,i)=>s|(x>0)<<i,0);
+ return 0}
+function wr(a,v){a&=65535;v&=255;
+ if(a<0x2000)ram[a&2047]=v;
+ else if(a<0x4000)switch(a&7){
+  case 0:ctrl=v;break;case 1:mask=v;break;case 3:oa=v;break;
+  case 4:oam[oa]=v;oa=oa+1&255;break;
+  case 5:if(w)scy=v;else scx=v;w^=1;break;
+  case 6:if(w)va=(tv|v)&0x3fff;else tv=(v&0x3f)<<8;w^=1;break;
+  case 7:vw(va,v);va=va+(ctrl&4?32:1)&0x3fff}
+ else if(a==0x4014){for(let i=0;i<256;i++)oam[i]=rd(v<<8|i);cyc+=513}
+ else if(a==0x4016)sh=pad
+ else if(a>=0x4000&&a<0x4018)apuW(a,v)
+ else if(a>=0x8000)mapw(a,v)}
+const bsel=b=>{b=(b%Math.max(nc,1))*8192;if(nc)chr.set(crom.subarray(b,b+8192))};
+function mapw(a,v){if(mp==4){const k=a&0xE001;if(k==0x8000)m4s=v;else if(k==0x8001){m4r[m4s&7]=v;m4u()}else if(k==0xA000)mir=v&1?0:1;else if(k==0xC000)m4l=v;else if(k==0xC001)m4rl=1;else if(k==0xE000){m4e=0;irqp=0}else if(k==0xE001)m4e=1;return}if(mp==2)pb=v%np;else if(mp==3)bsel(v);else if(mp==1){if(v&128){mr=16;mg[0]|=12;return}const l=mr&1;mr=mr>>1|(v&1)<<4;if(l){const r=a>>13&3;mg[r]=mr;mr=16;if(r==0)mir=(mg[0]&3)==2?1:0;if(r==1)bsel(mg[1]>>1);if(r==3)pb=(mg[3]&15)%np}}}
+const nz=v=>{fz=v?0:1;fn=v>>7&1;return v};
+const push=v=>{ram[256+sp]=v;sp=sp-1&255},pop=()=>{sp=sp+1&255;return ram[256+sp]};
+const gp=b=>fc|fz<<1|fi<<2|fd<<3|b|32|fv<<6|fn<<7;
+const sf=v=>{fc=v&1;fz=v>>1&1;fi=v>>2&1;fd=v>>3&1;fv=v>>6&1;fn=v>>7&1};
+const BC={BPL:()=>!fn,BMI:()=>fn,BVC:()=>!fv,BVS:()=>fv,BCC:()=>!fc,BCS:()=>fc,BNE:()=>!fz,BEQ:()=>fz};
+function step(){
+ if(irqp&&!fi)irq_();
+ if(pc==bp_){if(skipbp)skipbp=0;else throw'bp'}
+ const op=rd(pc++),d=D[op];pc&=65535;
+ if(!d){cyc+=2;return}
+ const m=d[0],md=d[1];let a=0,v,r;
+ switch(md){
+  case'i':a=pc++;break;case'z':a=rd(pc++);break;
+  case'zx':a=rd(pc++)+X&255;break;case'zy':a=rd(pc++)+Y&255;break;
+  case'a':a=rd(pc++)|rd(pc++)<<8;break;
+  case'ax':a=(rd(pc++)|rd(pc++)<<8)+X;break;case'ay':a=(rd(pc++)|rd(pc++)<<8)+Y;break;
+  case'ix':{const z=rd(pc++)+X&255;a=rd(z)|rd(z+1&255)<<8;break}
+  case'iy':{const z=rd(pc++);a=(rd(z)|rd(z+1&255)<<8)+Y;break}
+  case'ind':{const z=rd(pc++)|rd(pc++)<<8;a=rd(z)|rd(z&0xff00|z+1&255)<<8}}
+ a&=65535;
+ cyc+=md=='ix'||md=='iy'?6:/^(a|ax|ay|zx|zy)$/.test(md)?4:md=='z'?3:2;
+ switch(m){
+  case'LDA':A=nz(rd(a));break;case'LDX':X=nz(rd(a));break;case'LDY':Y=nz(rd(a));break;
+  case'STA':wr(a,A);break;case'STX':wr(a,X);break;case'STY':wr(a,Y);break;
+  case'ADC':case'SBC':v=rd(a);if(m=='SBC')v^=255;r=A+v+fc;fv=(A^r)&(v^r)&128?1:0;fc=r>255?1:0;A=nz(r&255);break;
+  case'AND':A=nz(A&rd(a));break;case'ORA':A=nz(A|rd(a));break;case'EOR':A=nz(A^rd(a));break;
+  case'CMP':case'CPX':case'CPY':r=(m=='CMP'?A:m=='CPX'?X:Y)-rd(a);fc=r>=0?1:0;nz(r&255);break;
+  case'BIT':v=rd(a);fz=A&v?0:1;fn=v>>7;fv=v>>6&1;break;
+  case'INC':case'DEC':wr(a,nz(rd(a)+(m=='INC'?1:-1)&255));cyc+=2;break;
+  case'ASL':case'LSR':case'ROL':case'ROR':{v=md=='c'?A:rd(a);const c=fc;
+   if(m=='ASL'||m=='ROL'){fc=v>>7;v=(v<<1|(m=='ROL'?c:0))&255}else{fc=v&1;v=v>>1|(m=='ROR'?c<<7:0)}
+   nz(v);if(md=='c')A=v;else{wr(a,v);cyc+=2}break}
+  case'INX':X=nz(X+1&255);break;case'INY':Y=nz(Y+1&255);break;case'DEX':X=nz(X-1&255);break;case'DEY':Y=nz(Y-1&255);break;
+  case'TAX':X=nz(A);break;case'TAY':Y=nz(A);break;case'TXA':A=nz(X);break;case'TYA':A=nz(Y);break;case'TSX':X=nz(sp);break;case'TXS':sp=X;break;
+  case'CLC':fc=0;break;case'SEC':fc=1;break;case'CLI':fi=0;break;case'SEI':fi=1;break;case'CLD':fd=0;break;case'SED':fd=1;break;case'CLV':fv=0;break;
+  case'PHA':push(A);cyc++;break;case'PLA':A=nz(pop());cyc+=2;break;case'PHP':push(gp(16));cyc++;break;case'PLP':sf(pop());cyc+=2;break;
+  case'JMP':pc=a;break;
+  case'JSR':push(pc-1>>8);push(pc-1&255);pc=a;cyc+=4;break;
+  case'RTS':pc=(pop()|pop()<<8)+1;cyc+=4;break;
+  case'RTI':sf(pop());pc=pop()|pop()<<8;cyc+=4;break;
+  case'LAX':A=X=nz(rd(a));break;case'SAX':wr(a,A&X);break;
+  case'DCP':v=rd(a)-1&255;wr(a,v);r=A-v;fc=r>=0?1:0;nz(r&255);break;
+  case'ISB':v=rd(a)+1&255;wr(a,v);adc_(v^255);break;
+  case'SLO':v=rd(a);fc=v>>7;v=v<<1&255;wr(a,v);A=nz(A|v);break;
+  case'RLA':v=rd(a);r=fc;fc=v>>7;v=(v<<1|r)&255;wr(a,v);A=nz(A&v);break;
+  case'SRE':v=rd(a);fc=v&1;v>>=1;wr(a,v);A=nz(A^v);break;
+  case'RRA':v=rd(a);r=fc;fc=v&1;v=v>>1|r<<7;wr(a,v);adc_(v);break;
+  case'BRK':push(pc+1>>8);push(pc+1&255);push(gp(16));fi=1;pc=rd(0xfffe)|rd(0xffff)<<8;cyc+=5}
+ if(md=='r'){const o=rd(pc++);if(BC[m]()){pc+=o<128?o:o-256;cyc++}}
+ pc&=65535}
+function adc_(v){const r=A+v+fc;fv=(A^r)&(v^r)&128?1:0;fc=r>255?1:0;A=nz(r&255)}
+function m4u(){const n8=np*2,R=m4r,pm=m4s>>6&1;pb4=[pm?n8-2:R[6]%n8,R[7]%n8,pm?R[6]%n8:n8-2,n8-1];
+ if(nc){const B=(i,k)=>{k%=nc*8;chr.set(crom.subarray(k*1024,k*1024+1024),i*1024)},sl=m4s>>7&1?[R[2],R[3],R[4],R[5],R[0]&254,R[0]|1,R[1]&254,R[1]|1]:[R[0]&254,R[0]|1,R[1]&254,R[1]|1,R[2],R[3],R[4],R[5]];sl.forEach((k,i)=>B(i,k))}}
+function clk4(){if(m4c==0||m4rl){m4c=m4l;m4rl=0}else m4c--;if(m4c==0&&m4e)irqp=1}
+function irq_(){push(pc>>8);push(pc&255);push(gp(0));fi=1;pc=rd(0xfffe)|rd(0xffff)<<8;cyc+=7}
+function nmi(){push(pc>>8);push(pc&255);push(gp(0));fi=1;pc=rd(0xfffa)|rd(0xfffb)<<8;cyc+=7}
+const ctx=$('#scr').getContext('2d'),img=ctx.createImageData(256,240),px=new Uint32Array(img.data.buffer);
+function render(){ovf=0;
+ const bgOn=mask&8,bg=new Uint8Array(61440),un=pal[0];
+ for(let y=0;y<240;y++){const L=LS[y],wy=(y+L[1]+(L[2]&2?240:0))%480,ty=(wy%240)>>3,fy=wy&7;
+  for(let x=0;x<256;x++){let c=un;
+   if(bgOn){const wx=(x+L[0]+(L[2]&1?256:0))&511,base=nt(0x2000|((wx>>8)|(wy>=240?2:0))<<10),tx=(wx&255)>>3,
+     id=vram[base+ty*32+tx],at=vram[base+960+(ty>>2)*8+(tx>>2)],ad=((L[2]&16)<<8)+id*16+fy,b=7-(wx&7),
+     pv=(chr[ad]>>b&1)|(chr[ad+8]>>b&1)<<1;
+    if(pv){c=pal[(at>>((ty&2)<<1|tx&2)&3)*4+pv];bg[y*256+x]=1}}
+   px[y*256+x]=PX[c&63]}}
+ if(mask&16){const h=ctrl&32?16:8,al=new Uint8Array(1024),cn=new Uint8Array(256);
+  for(let i=0;i<64;i++){const sy=oam[i*4]+1;for(let r=0;r<h;r++){const y=sy+r;if(y>=240)break;if(cn[y]<8){cn[y]++;al[i*16+r]=1}else ovf=1}}
+  for(let i=63;i>=0;i--){const sy=oam[i*4]+1,t=oam[i*4+1],at=oam[i*4+2],sx=oam[i*4+3];
+   for(let r=0;r<h;r++){const y=sy+r;if(y>=240)break;if(!al[i*16+r])continue;let rr=at&128?h-1-r:r,tt=t,pt=ctrl&8?4096:0;
+    if(h==16){tt=(t&254)+(rr>>3);pt=(t&1)<<12;rr&=7}
+    const ad=pt+tt*16+rr,l=chr[ad],hh=chr[ad+8];
+    for(let k=0;k<8;k++){const x=sx+k;if(x>255)break;const b=at&64?k:7-k,pv=(l>>b&1)|(hh>>b&1)<<1;
+     if(!pv||(at&32&&bg[y*256+x]))continue;px[y*256+x]=PX[pal[16+(at&3)*4+pv]&63]}}}}
+ ctx.putImageData(img,0,0)}
+/* ───── editor tile ───── */
+let ech=new Uint8Array(8192),sel=0,col=1,ep=[0x0F,0x16,0x27,0x30],dirty=0,clip=null;
+const css=c=>`rgb(${c&255},${c>>8&255},${c>>16&255})`,g=(t,r,k)=>(ech[t*16+r]>>7-k&1)|(ech[t*16+8+r]>>7-k&1)<<1,
+ sp2=(t,r,k,v)=>{const m=128>>k;for(let i=0;i<2;i++){const j=t*16+r+i*8;ech[j]=v>>i&1?ech[j]|m:ech[j]&~m}};
+const sheet=$('#sheet'),big=$('#big'),pk=$('#pk'),S=sheet.getContext('2d'),SI=S.createImageData(256,128),SP=new Uint32Array(SI.data.buffer);
+function drawBig(){const B=big.getContext('2d');for(let r=0;r<8;r++)for(let k=0;k<8;k++){B.fillStyle=css(PX[ep[g(sel,r,k)]]);B.fillRect(k*16,r*16,16,16)}
+ B.strokeStyle='rgba(0,0,0,.35)';B.beginPath();for(let i=1;i<8;i++){B.moveTo(i*16,0);B.lineTo(i*16,128);B.moveTo(0,i*16);B.lineTo(128,i*16)}B.stroke()}
+function drawSw(){$('#sw').innerHTML=ep.map((c,i)=>`<button data-i="${i}" style="background:${css(PX[c])};${i==col?'outline:2px solid #fff':''}">${i}</button>`).join('')}
+function drawChr(){for(let t=0;t<512;t++){const bx=(t>>8)*128+(t&15)*8,by=(t>>4&15)*8;for(let r=0;r<8;r++)for(let k=0;k<8;k++)SP[(by+r)*256+bx+k]=PX[ep[g(t,r,k)]]}
+ S.putImageData(SI,0,0);S.strokeStyle='#f5c542';S.strokeRect((sel>>8)*128+(sel&15)*8+.5,(sel>>4&15)*8+.5,7,7);
+ $('#tn').textContent='Tile '+sel+' (tabella '+(sel>>8)+', indice '+(sel&255)+' = $'+(sel&255).toString(16).toUpperCase().padStart(2,'0')+')';drawBig();drawSw()}
+const P=(e,c,w,h)=>{const r=c.getBoundingClientRect();return[Math.max(0,Math.min(w-1,(e.clientX-r.left)/r.width*w|0)),Math.max(0,Math.min(h-1,(e.clientY-r.top)/r.height*h|0))]};
+const live=()=>{if(chr)chr.set(ech.subarray(sel*16,sel*16+16),sel*16)},edt=f=>{f();dirty=1;live();drawChr();drawNt()};
+const relo=()=>{try{ech.set(asm().chr)}catch(e){}readNt();readMs();readMu();drawChr();drawNt();drawMu()};
+function applyGfx(){toMain();usnap();if(/^\s*\.chrbanks\s+([2-9]|\d\d)/im.test(ta.value))return log('✖ L’editor tile scrive solo il primo banco CHR: con più banchi scrivi i .tile a mano','er');
+ const s=ta.value.replace(/^; <GFX>[\s\S]*?^; <\/GFX>\n?/m,'').replace(/^[ \t]*\.(chr|tile)\b.*\n?/gim,'').replace(/\s+$/,'');
+ let o='\n\n; <GFX> tile generati dall’editor grafico\n',prev=-2;
+ for(let t=0;t<512;t++){let any=0;for(let i=0;i<16;i++)any|=ech[t*16+i];if(!any)continue;
+  if(t!=prev+1)o+='.chr '+t+'\n';prev=t;
+  for(let r=0;r<8;r++){let q='';for(let k=0;k<8;k++){const v=g(t,r,k);q+=v||'.'}o+='.tile '+q+'\n'}}
+ ta.value=s+o+'; </GFX>\n';dirty=0;upd()}
+sheet.onclick=e=>{const[x,y]=P(e,sheet,32,16);sel=(x>>4)*256+y*16+(x&15);drawChr()};
+let pd=0;const paint=e=>{const[k,r]=P(e,big,8,8);edt(()=>sp2(sel,r,k,col))};
+big.onpointerdown=e=>{pd=1;big.setPointerCapture(e.pointerId);paint(e)};big.onpointermove=e=>{if(pd)paint(e)};big.onpointerup=()=>pd=0;
+const K2=pk.getContext('2d');PX.forEach((c,i)=>{K2.fillStyle=css(c);K2.fillRect(i%16*16,(i>>4)*16,16,16)});
+pk.onclick=e=>{const[x,y]=P(e,pk,16,4);ep[col]=y*16+x;if(!col)bp.forEach(b=>b[0]=ep[0]);drawChr();drawNt()};
+$('#sw').onclick=e=>{const i=e.target.dataset.i;if(i!==undefined){col=+i;drawSw()}};
+$('#g_clr').onclick=()=>edt(()=>ech.fill(0,sel*16,sel*16+16));
+const tr=f=>edt(()=>{const a=[];for(let r=0;r<8;r++)for(let k=0;k<8;k++)a[r*8+k]=g(sel,r,k);for(let r=0;r<8;r++)for(let k=0;k<8;k++)sp2(sel,r,k,a[f(r,k)])});
+$('#g_h').onclick=()=>tr((r,k)=>r*8+7-k);$('#g_v').onclick=()=>tr((r,k)=>(7-r)*8+k);
+$('#g_cp').onclick=()=>{clip=ech.slice(sel*16,sel*16+16)};$('#g_ps').onclick=()=>{if(clip)edt(()=>ech.set(clip,sel*16))};
+$('#g_rl').onclick=()=>{dirty=0;relo()};
+$('#g_ap').onclick=()=>{applyGfx();log('✔ Tile scritti nel codice','ok')};
+$('#g_pl').onclick=()=>{ta.setRangeText('.byte '+ep.map(c=>'$'+c.toString(16).toUpperCase().padStart(2,'0')).join(',')+'\n',ta.selectionStart,ta.selectionEnd,'end');upd()};
+/* ───── editor schermate ───── */
+let nmt=new Uint8Array(1024),ntd=0,bp=[[0x21,0x16,0x06,0x26],[0x21,0x0A,0x1A,0x2A],[0x21,0x02,0x12,0x22],[0x21,0x08,0x18,0x28]],pi=0,mode=0;
+ep=bp[0];
+const NC=$('#ntc'),N2=NC.getContext('2d'),NI=N2.createImageData(256,240),NP=new Uint32Array(NI.data.buffer);
+function drawNt(){
+ for(let ty=0;ty<30;ty++)for(let tx=0;tx<32;tx++){const id=(sel>>8)*256+nmt[ty*32+tx],pl=bp[nmt[960+(ty>>2)*8+(tx>>2)]>>((ty&2)<<1|tx&2)&3];
+  for(let r=0;r<8;r++)for(let k=0;k<8;k++)NP[(ty*8+r)*256+tx*8+k]=PX[pl[g(id,r,k)]&63]}
+ N2.putImageData(NI,0,0);
+ if(mode){N2.strokeStyle='rgba(255,255,255,.45)';N2.beginPath();for(let i=16;i<256;i+=16){N2.moveTo(i+.5,0);N2.lineTo(i+.5,240);N2.moveTo(0,i+.5);N2.lineTo(256,i+.5)}N2.stroke()}
+ $('#npb').innerHTML=bp.map((b,i)=>`<button data-p="${i}" style="${i==pi?'outline:2px solid #fff':''}">Pal ${i}</button>`).join('');$('#n_i').textContent=' '+(cs+1)+'/'+LV.length+' ';$('#n_ori').textContent='Livello: '+(lvv?'verticale':'orizzontale');drawMs()}
+function readNt(){lvv=/^LEVEL_V=1/m.test(FILES[MAIN]||'')?1:0;const m=/^; <NT>[\s\S]*?^; <\/NT>/m.exec(FILES[MAIN]||'');if(!m)return;const v=[];
+ for(const l of m[0].split('\n')){const q=/^\s*\.byte\s+(.*)/.exec(l);if(q)q[1].split(',').forEach(x=>v.push(parseInt(x.trim().replace('$','0x'))))}
+ if(v.length>=1040){LV=[];for(let o=0;o+1024<=v.length;o+=(o?1024:1040))LV.push(Uint8Array.from(v.slice(o,o+1024)));cs=Math.min(cs,LV.length-1);nmt=LV[cs];bp.forEach((b,i)=>b.splice(0,4,...v.slice(1024+i*4,1028+i*4)))}}
+function applyNt(){toMain();usnap();
+ const s=ta.value.replace(/^; <NT>[\s\S]*?^; <\/NT>\n?/m,'').replace(/^; <LV>[\s\S]*?^; <\/LV>\n?/m,'').replace(/\s+$/,''),h=a=>a.map(x=>'$'+x.toString(16).toUpperCase().padStart(2,'0')).join(',');
+ let o='\n\n; <NT> schermata generata dall’editor\nscreen:\n';for(let i=0;i<1024;i+=32)o+='  .byte '+h([...LV[0].slice(i,i+32)])+'\n';
+ o+='screen_pal:\n';for(const b of bp)o+='  .byte '+h(b)+'\n';
+ for(let k=1;k<LV.length;k++){o+='screen_'+k+':\n';for(let i=0;i<1024;i+=32)o+='  .byte '+h([...LV[k].slice(i,i+32)])+'\n'}
+ o+='; </NT>\n'+lvBlock(h);
+ const i=s.search(/^[ \t]*\.org\s+\$FFFA/im);   // i dati vanno prima dei vettori
+ ta.value=i<0?s+o:s.slice(0,i).replace(/\s+$/,'')+o+'\n'+s.slice(i);ntd=0;upd()}
+const npaint=e=>{const[x,y]=P(e,NC,32,30);
+ if(mode){const i=960+(y>>2)*8+(x>>2),sh2=(y&2)<<1|x&2;nmt[i]=nmt[i]&~(3<<sh2)|pi<<sh2}else nmt[y*32+x]=sel&255;ntd=1;drawNt()};
+let pd2=0;NC.onpointerdown=e=>{pd2=1;NC.setPointerCapture(e.pointerId);npaint(e)};NC.onpointermove=e=>{if(pd2)npaint(e)};NC.onpointerup=()=>pd2=0;
+$('#npb').onclick=e=>{const i=e.target.dataset.p;if(i!==undefined){pi=+i;ep=bp[pi];drawChr();drawNt()}};
+$('#n_m').onclick=e=>{mode^=1;e.target.textContent='Modo: '+(mode?'colore':'tile');drawNt()};
+$('#n_clr').onclick=()=>{nmt.fill(0);ntd=1;drawNt()};
+$('#n_ap').onclick=()=>{applyNt();log('✔ Schermata scritta nel codice','ok')};
+/* ───── importazione immagini e sprite composti ───── */
+function impTiles(d,w,h){const cs=ep.map(c=>[PX[c]&255,PX[c]>>8&255,PX[c]>>16&255]);let n=0;
+ for(let ty=0;ty<h>>3;ty++)for(let tx=0;tx<w>>3;tx++){const t=sel+ty*16+tx;if(tx>15||t>511)continue;
+  for(let r=0;r<8;r++)for(let k=0;k<8;k++){const i=((ty*8+r)*w+tx*8+k)*4;let b=0;
+   if(d[i+3]>=128){let m=1e9;cs.forEach((c,j)=>{const e=(d[i]-c[0])**2+(d[i+1]-c[1])**2+(d[i+2]-c[2])**2;if(e<m){m=e;b=j}})}
+   sp2(t,r,k,b)}n++}
+ dirty=1;live();drawChr();drawNt();return n}
+$('#g_im').onclick=()=>$('#fim').click();
+$('#fim').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(!f)return;
+ try{const b=await createImageBitmap(f),c=document.createElement('canvas');c.width=b.width;c.height=b.height;const x=c.getContext('2d');x.drawImage(b,0,0);
+  const n=impTiles(x.getImageData(0,0,b.width,b.height).data,b.width,b.height);log('✔ '+n+' tile importati a partire dal tile '+sel+' (max 16 tile di larghezza)','ok')}catch(x){log('✖ '+x.message,'er')}};
+let MSF=[[]],mf=0,mh=0,mv=0,msd=0,mt=0;
+const MC=$('#msc').getContext('2d'),msc=$('#msc'),sb8=v=>'$'+(v&255).toString(16).toUpperCase().padStart(2,'0');
+function drawMs(){MC.fillStyle='#16121a';MC.fillRect(0,0,288,288);MC.strokeStyle='#3a3342';MC.beginPath();for(let i=0;i<=6;i++){MC.moveTo(i*48+.5,0);MC.lineTo(i*48+.5,288);MC.moveTo(0,i*48+.5);MC.lineTo(288,i*48+.5)}MC.stroke();
+ MC.strokeStyle='#e4002b';MC.strokeRect(3*48+.5,3*48+.5,47,47);
+ for(const q of MSF[mf]){const pl=bp[q.a&3];for(let r=0;r<8;r++)for(let k=0;k<8;k++){const v=g(q.t,r,k);if(!v)continue;MC.fillStyle=css(PX[pl[v]&63]);MC.fillRect(q.cx*48+(q.a&64?7-k:k)*6,q.cy*48+(q.a&128?7-r:r)*6,6,6)}}
+ $('#msf').innerHTML=MSF.map((_,i)=>`<button data-i="${i}"${i==mf?' style="outline:2px solid #fff"':''}>Frame ${i}</button>`).join('')}
+msc.onclick=e=>{const[cx,cy]=P(e,msc,6,6),F=MSF[mf],i=F.findIndex(q=>q.cx==cx&&q.cy==cy);if(i>=0)F.splice(i,1);else F.push({cx,cy,t:sel,a:pi|mh<<6|mv<<7});msd=1;drawMs()};
+$('#msf').onclick=e=>{const i=e.target.dataset.i;if(i!==undefined){mf=+i;drawMs()}};
+$('#m_fh').onclick=e=>{mh^=1;e.target.textContent='Specchio ↔: '+(mh?'sì':'no')};$('#m_fv').onclick=e=>{mv^=1;e.target.textContent='Specchio ↕: '+(mv?'sì':'no')};
+$('#m_nf').onclick=()=>{MSF.splice(mf+1,0,MSF[mf].map(q=>({...q})));mf++;msd=1;drawMs()};
+$('#m_df').onclick=()=>{if(MSF.length>1){MSF.splice(mf,1);mf=Math.min(mf,MSF.length-1);msd=1;drawMs()}};
+$('#m_play').onclick=e=>{if(mt){clearInterval(mt);mt=0;e.target.textContent='▶ Anima'}else{mt=setInterval(()=>{mf=(mf+1)%MSF.length;drawMs()},130);e.target.textContent='■ Stop'}};
+function applyMs(){toMain();usnap();const s=ta.value.replace(/^; <MS>[\s\S]*?^; <\/MS>\n?/m,'').replace(/\s+$/,'');
+ let o='\n\n; <MS> sprite composti generati dall’editor (dy,tile,attr,dx; $80 = fine frame)\n';
+ MSF.forEach((F,i)=>{o+='meta_'+i+':\n';for(const q of F)o+='  .byte '+[sb8((q.cy-3)*8),sb8(q.t),sb8(q.a),sb8((q.cx-3)*8)].join(',')+'\n';o+='  .byte $80\n'});
+ o+='meta_table:\n  .word '+MSF.map((_,i)=>'meta_'+i).join(', ')+'\n; </MS>\n';
+ const i=s.search(/^[ \t]*\.org\s+\$FFFA/im);ta.value=i<0?s+o:s.slice(0,i).replace(/\s+$/,'')+o+'\n'+s.slice(i);msd=0;upd()}
+function readMs(){const m=/^; <MS>[\s\S]*?^; <\/MS>/m.exec(FILES[MAIN]||'');if(!m)return;const R=[];let cur=null;const sg=x=>x>127?x-256:x;
+ for(const l of m[0].split('\n')){if(/^meta_\d+:/.test(l)){cur=[];R.push(cur)}else{const q=/^\s*\.byte\s+(.*)/.exec(l);if(q&&cur){const v=q[1].split(',').map(x=>parseInt(x.trim().replace('$','0x')));
+  if(v.length==4){const cx=sg(v[3])/8+3,cy=sg(v[0])/8+3;if(Number.isInteger(cx)&&Number.isInteger(cy)&&cx>=0&&cx<6&&cy>=0&&cy<6)cur.push({cx,cy,t:v[1]+(sel>>8)*256,a:v[2]})}}}}
+ if(R.length){MSF=R;mf=Math.min(mf,MSF.length-1)}}
+const DM=`; --- disegna un frame di sprite composto ---
+; entrata: A/X = byte basso/alto dell'indirizzo del frame (es. #<meta_0 / #>meta_0)
+;          meta_x, meta_y = posizione; oam_i = primo sprite libero (multiplo di 4)
+meta_ptr=$F0
+meta_x=$F2
+meta_y=$F3
+oam_i=$F4
+draw_meta:
+  sta meta_ptr
+  stx meta_ptr+1
+  ldy #0
+  ldx oam_i
+@l: lda (meta_ptr),y
+  cmp #$80
+  beq @done
+  clc
+  adc meta_y
+  sta $0200,x
+  iny
+  lda (meta_ptr),y
+  sta $0201,x
+  iny
+  lda (meta_ptr),y
+  sta $0202,x
+  iny
+  lda (meta_ptr),y
+  clc
+  adc meta_x
+  sta $0203,x
+  iny
+  inx
+  inx
+  inx
+  inx
+  jmp @l
+@done: stx oam_i
+  rts
+`;
+$('#m_rt').onclick=()=>{ta.setRangeText(DM,ta.selectionStart,ta.selectionEnd,'end');upd()};
+/* ───── strumenti: annulla, cerca, simboli, viewer, stati, schermo, touch ───── */
+const UH=[];let RB=[],SS=null,rw=0,rc=0,mrec=null;
+function usnap(){UH.push([CUR,ta.value]);if(UH.length>30)UH.shift()}
+$('#undo').onclick=()=>{if(!UH.length)return log('Niente da annullare');const[f,t]=UH.pop();if(f!=CUR)openFile(f);ta.value=t;upd();dirty=0;ntd=0;msd=0;relo();log('↶ Annullato','ok')};
+function findNext(){const q=$('#fq').value;if(!q)return;const t=ta.value,L=t.toLowerCase(),k=q.toLowerCase();let i=L.indexOf(k,ta.selectionEnd);if(i<0)i=L.indexOf(k);if(i<0)return log('Non trovato: '+q);
+ ta.focus();ta.setSelectionRange(i,i+q.length);ta.scrollTop=Math.max(0,(t.slice(0,i).split('\n').length-4)*20)}
+const TV=$('#ntv'),TC=TV.getContext('2d'),TI=TC.createImageData(512,480),TP=new Uint32Array(TI.data.buffer);
+function drawNtv(){for(let n=0;n<4;n++){const base=nt(0x2000|n<<10),ox=(n&1)*256,oy=(n>>1)*240,pt=(ctrl&16)<<8;
+ for(let ty=0;ty<30;ty++)for(let tx=0;tx<32;tx++){const id=vram[base+ty*32+tx],at=vram[base+960+(ty>>2)*8+(tx>>2)]>>((ty&2)<<1|tx&2)&3;
+  for(let r=0;r<8;r++){const ad=pt+id*16+r,l=chr[ad],h=chr[ad+8];for(let k=0;k<8;k++){const v=(l>>7-k&1)|(h>>7-k&1)<<1;TP[(oy+ty*8+r)*512+ox+tx*8+k]=PX[pal[v?at*4+v:0]&63]}}}}
+ TC.putImageData(TI,0,0);TC.strokeStyle='#e4002b';const L=LS[0]||[0,0,0],X=L[0]+(L[2]&1?256:0),Y=L[1]+(L[2]&2?240:0);
+ for(const[a,b]of[[0,0],[-512,0],[0,-480],[-512,-480]])TC.strokeRect(X+a+.5,Y+b+.5,255,239)}
+$('#f_a').onclick=()=>{const q=$('#fq').value.toLowerCase();if(!q)return;FILES[CUR]=ta.value;con.textContent='';let n=0;
+ for(const f in FILES)FILES[f].split('\n').forEach((l,i)=>{if(l.toLowerCase().includes(q)&&n<200){n++;log(f+':'+(i+1)+'  '+l.trim(),'',i+1,f)}});log(n+' risultati per «'+$('#fq').value+'» in tutti i file','ok')};
+$('#hlp').onclick=()=>$('#hd').showModal();$('#hc').onclick=()=>$('#hd').close();
+$('#f_n').onclick=findNext;$('#fq').onkeydown=e=>{if(e.key=='Enter')findNext()};
+$('#f_r').onclick=()=>{const q=$('#fq').value;if(!q)return;const r=$('#fr').value;let n=0;const nv=ta.value.replace(new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'gi'),()=>(n++,r));if(n){usnap();ta.value=nv;upd()}log('✔ Sostituzioni: '+n,'ok')};
+function fillSy(){$('#sy').innerHTML='<option value="">Vai a simbolo…</option>'+Object.entries(SYMS).filter(([k,v])=>v>=0x8000&&!k.includes('__')).sort((a,b)=>a[1]-b[1]).map(([k])=>`<option>${E(k)}</option>`).join('')}
+$('#sy').onchange=e=>{const k=e.target.value;e.target.selectedIndex=0;if(!k)return;const re=new RegExp('^[ \\t]*'+k+':','m');
+ for(const f in FILES){const t=f==CUR?ta.value:FILES[f],m=re.exec(t);if(m){if(f!=CUR)openFile(f);ta.focus();ta.setSelectionRange(m.index,m.index);ta.scrollTop=Math.max(0,(t.slice(0,m.index).split('\n').length-4)*20);return}}log('Simbolo definito altrove: '+k)};
+function viewers(){$('#pw').innerHTML=[...pal].map((c,i)=>`<i style="background:${css(PX[c&63])}" title="$${hx(0x3F00+i,4)} = $${hx(c,2)}"></i>`).join('');
+ let o='OAM (y tile attr x):\n';for(let i=0;i<64;i++){const y=oam[i*4];if(y<240)o+=hx(i,2)+': '+hx(y,2)+' '+hx(oam[i*4+1],2)+' '+hx(oam[i*4+2],2)+' '+hx(oam[i*4+3],2)+'\n'}$('#ov').textContent=o;drawNtv()}
+function snap_(){return{r:[A,X,Y,sp,pc,fc,fz,fi,fd,fv,fn,cyc,ctrl,mask,vb,hit,w,va,tv,buf,oa,scx,scy,sh,pb,mr,mir,en,lin,lr],mg:mg.slice(),ram:ram.slice(),vram:vram.slice(),oam:oam.slice(),pal:pal.slice(),chr:chr.slice(),ar:ar.slice(),lc:lc.slice()}}
+function rest_(o){[A,X,Y,sp,pc,fc,fz,fi,fd,fv,fn,cyc,ctrl,mask,vb,hit,w,va,tv,buf,oa,scx,scy,sh,pb,mr,mir,en,lin,lr]=o.r;mg=o.mg.slice();ram.set(o.ram);vram.set(o.vram);oam.set(o.oam);pal.set(o.pal);chr.set(o.chr);ar.set(o.ar);lc.splice(0,4,...o.lc)}
+$('#svs').onclick=()=>{if(prg){SS=snap_();log('💾 Stato salvato','ok')}};
+$('#lds').onclick=()=>{if(SS&&prg){rest_(SS);try{frame()}catch(e){}setRun(1)}else log('Nessuno stato salvato')};
+$('#rwd').onpointerdown=()=>{rw=1};['onpointerup','onpointerleave','onpointercancel'].forEach(k=>$('#rwd')[k]=()=>{rw=0});
+$('#reg').onchange=e=>{const q=+e.target.value;LN=q?106.56:114;VB=Math.round(241*LN);TOT=Math.round((q?312:262)*LN);FT=q?20:16.64;CPU=q?1662607:1789773};
+$('#shot').onclick=()=>scr.toBlob(b=>dl('schermata.png',b,'image/png'));
+$('#rec').onclick=e=>{if(mrec){mrec.stop();return}try{const ch2=[];mrec=new MediaRecorder(scr.captureStream(60),{mimeType:'video/webm'});mrec.ondataavailable=x=>ch2.push(x.data);
+ mrec.onstop=()=>{dl('gioco.webm',new Blob(ch2,{type:'video/webm'}),'video/webm');mrec=null;e.target.textContent='⏺ REC'};mrec.start();e.target.textContent='⏹ STOP'}catch(x){mrec=null;log('✖ Registrazione non supportata: '+x.message,'er')}};
+$('#tc').querySelectorAll('button').forEach(b=>{const v=+b.dataset.b;b.onpointerdown=e=>{e.preventDefault();pad|=v};['onpointerup','onpointerleave','onpointercancel'].forEach(k=>b[k]=()=>{pad&=~v})});
+/* ───── musica: tracker, driver 6502 e anteprima ───── */
+const MUSDRV=`; --- driver musicale: music_init (una volta) e music_update (a ogni NMI) ---
+mus_tick=$E0
+mus_y=$E1
+music_init:
+  lda #$0F
+  sta $4015
+  lda #$08
+  sta $4001
+  sta $4005
+  lda #$30
+  sta $4000
+  sta $4004
+  sta $400C
+  lda #$80
+  sta $4008
+  lda #0
+  sta mus_tick
+  sta mus_y
+  rts
+music_update:
+  lda mus_tick
+  beq @row
+  dec mus_tick
+  rts
+@row: ldy mus_y
+  lda music_ch0,y
+  beq @p2
+  cmp #255
+  beq @o1
+  tax
+  lda music_ch0+1,y
+  sta $4000
+  lda note_lo,x
+  sta $4002
+  lda note_hi,x
+  sta $4003
+  jmp @p2
+@o1: lda #$30
+  sta $4000
+@p2: lda music_ch1,y
+  beq @tr
+  cmp #255
+  beq @o2
+  tax
+  lda music_ch1+1,y
+  sta $4004
+  lda note_lo,x
+  sta $4006
+  lda note_hi,x
+  sta $4007
+  jmp @tr
+@o2: lda #$30
+  sta $4004
+@tr: lda music_ch2,y
+  beq @no
+  cmp #255
+  beq @o3
+  tax
+  lda #$FF
+  sta $4008
+  lda tri_lo,x
+  sta $400A
+  lda tri_hi,x
+  sta $400B
+  jmp @no
+@o3: lda #$80
+  sta $4008
+@no: lda music_ch3,y
+  beq @adv
+  cmp #255
+  beq @o4
+  sec
+  sbc #1
+  and #15
+  sta $400E
+  lda music_ch3+1,y
+  sta $400C
+  lda #0
+  sta $400F
+  jmp @adv
+@o4: lda #$30
+  sta $400C
+@adv: iny
+  iny
+  cpy #MUS_ROWS*2
+  bcc @st
+  ldy #0
+@st: sty mus_y
+  lda #MUS_SPEED-1
+  sta mus_tick
+  rts
+`;
+const NN=['C-','C#','D-','D#','E-','F-','F#','G-','G#','A-','A#','B-'],MK={z:0,s:1,x:2,d:3,c:4,v:5,g:6,b:7,h:8,n:9,j:10,m:11,',':12};
+let MR=[0,1,2,3].map(()=>Array.from({length:32},()=>({n:0,v:15,d:2}))),mrw=0,mc=0,mti=0,mtk=0,my=0,mud=0;
+const PT=(n,tri)=>Math.max(0,Math.min(2047,Math.round(1789773/((tri?32:16)*440*2**((n-46)/12)))-1));
+$('#mu_v').innerHTML=[15,14,13,12,11,10,9,8,7,6,5,4,3,2,1,0].map(v=>`<option>${v}</option>`).join('');
+const nm=(q,c)=>!q.n?'···':q.n==255?'===':c==3?'P'+((q.n-1)&15).toString(16).toUpperCase()+' ':NN[(q.n-1)%12]+(1+((q.n-1)/12|0));
+function drawMu(){const N=MR[0].length;let h='<table>';for(let r=0;r<N;r++){h+=`<tr${r%4?'':' class="b"'}><th>${r.toString(16).toUpperCase().padStart(2,'0')}</th>`;
+ for(let c=0;c<4;c++){const q=MR[c][r];h+=`<td data-r="${r}" data-c="${c}"${r==mrw&&c==mc?' class="s"':''}>${nm(q,c)} ${q.n&&q.n!=255?q.v.toString(16).toUpperCase():'·'}</td>`}h+='</tr>'}$('#mt').innerHTML=h+'</table>'}
+$('#mt').onclick=e=>{const t=e.target.closest('td');if(t){mrw=+t.dataset.r;mc=+t.dataset.c;drawMu();$('#mt').focus()}};
+$('#mt').onkeydown=e=>{const N=MR[0].length,q=MR[mc][mrw],k=e.key;let ed=0;
+ if(k in MK&&!e.ctrlKey&&!e.metaKey){const n=(+$('#mu_o').value-1)*12+MK[k]+1;if(n>72)return;Object.assign(q,{n:mc==3?((n-1)&15)+1:n,v:+$('#mu_v').value,d:+$('#mu_d').value});ed=1}
+ else if(k==' '){q.n=255;ed=1}else if(k=='Delete'||k=='Backspace'){q.n=0;ed=1}
+ else if(k=='ArrowDown')mrw=Math.min(N-1,mrw+1);else if(k=='ArrowUp')mrw=Math.max(0,mrw-1);else if(k=='ArrowRight')mc=Math.min(3,mc+1);else if(k=='ArrowLeft')mc=Math.max(0,mc-1);else return;
+ e.preventDefault();if(ed){mud=1;mrw=Math.min(N-1,mrw+1)}drawMu()};
+$('#mu_n').onchange=e=>{const N=+e.target.value;MR.forEach(a=>{while(a.length<N)a.push({n:0,v:15,d:2});a.length=N});mrw=Math.min(mrw,N-1);mud=1;drawMu()};
+$('#mu_sp').onchange=()=>{mud=1};$('#mu_clr').onclick=()=>{MR.forEach(a=>a.forEach(q=>q.n=0));mud=1;drawMu()};
+function muInit(){apuW(0x4015,15);apuW(0x4001,8);apuW(0x4005,8);apuW(0x4000,0x30);apuW(0x4004,0x30);apuW(0x400C,0x30);apuW(0x4008,0x80)}
+function muRow(y){for(let c=0;c<4;c++){const q=MR[c][y];if(!q.n)continue;const B=[0x4000,0x4004,0x4008,0x400C][c];
+ if(q.n==255){apuW(B,c==2?0x80:0x30);continue}
+ if(c<2){apuW(B,q.d<<6|0x30|q.v);const p=PT(q.n,0);apuW(B+2,p&255);apuW(B+3,p>>8)}
+ else if(c==2){apuW(B,0xFF);const p=PT(q.n,1);apuW(B+2,p&255);apuW(B+3,p>>8)}
+ else{apuW(B+2,(q.n-1)&15);apuW(B,0x30|q.v);apuW(B+3,0)}}}
+function muStep(){const sp=+$('#mu_sp').value||6;if(mtk==0){muRow(my);$('#mu_pos').textContent='riga '+my.toString(16).toUpperCase();my=(my+1)%MR[0].length;mtk=sp-1}else mtk--}
+function muToggle(){if(mti){clearInterval(mti);mti=0;apuW(0x4015,0);apuFrame();$('#mu_play').textContent='▶ Ascolta'}else{initAudio();muInit();my=0;mtk=0;mti=setInterval(()=>{muStep();apuFrame()},1000/60);$('#mu_play').textContent='■ Stop'}}
+$('#mu_play').onclick=muToggle;
+function applyMu(){toMain();usnap();const s=ta.value.replace(/^; <MU>[\s\S]*?^; <\/MU>\n?/m,'').replace(/\s+$/,''),N=MR[0].length,h=a=>a.map(x=>'$'+(x&255).toString(16).toUpperCase().padStart(2,'0')).join(',');
+ let o='\n\n; <MU> musica generata dall’editor tracker\nMUS_SPEED='+(+$('#mu_sp').value||6)+'\nMUS_ROWS='+N+'\n';
+ for(let c=0;c<4;c++){o+='music_ch'+c+':\n';for(let r=0;r<N;r+=8){const b=[];for(let k=r;k<Math.min(N,r+8);k++){const q=MR[c][k];b.push(q.n,q.n&&q.n!=255?(c==2?0xFF:(c==3?0:q.d)<<6|0x30|q.v):0)}o+='  .byte '+h(b)+'\n'}}
+ for(const[t,tri,hi]of[['note_lo',0,0],['note_hi',0,1],['tri_lo',1,0],['tri_hi',1,1]]){const b=[];for(let n=1;n<=72;n++){const p=PT(n,tri);b.push(hi?p>>8:p&255)}o+=t+':\n  .byte 0\n';for(let i=0;i<72;i+=12)o+='  .byte '+h(b.slice(i,i+12))+'\n'}
+ o+='; </MU>\n';const i=s.search(/^[ \t]*\.org\s+\$FFFA/im);ta.value=i<0?s+o:s.slice(0,i).replace(/\s+$/,'')+o+'\n'+s.slice(i);mud=0;upd()}
+function readMu(){const m=/^; <MU>[\s\S]*?^; <\/MU>/m.exec(FILES[MAIN]||'');if(!m)return;let ch=-1;const D=[[],[],[],[]],sp=/MUS_SPEED=(\d+)/.exec(m[0]);if(sp)$('#mu_sp').value=sp[1];
+ for(const l of m[0].split('\n')){const c=/^music_ch(\d):/.exec(l);if(c)ch=+c[1];else if(/^\w+:/.test(l))ch=-1;else{const q=/^\s*\.byte\s+(.*)/.exec(l);if(q&&ch>=0)q[1].split(',').forEach(x=>D[ch].push(parseInt(x.trim().replace('$','0x'))))}}
+ const N=D[0].length>>1;if(!N)return;MR=D.map((a,c)=>Array.from({length:N},(_,r)=>{const n=a[r*2],p=a[r*2+1];return{n,v:n&&n!=255?p&15:15,d:c<2?p>>6&3:2}}));mrw=Math.min(mrw,N-1);$('#mu_n').value=N}
+$('#mu_ap').onclick=()=>{applyMu();log('✔ Musica scritta nel codice','ok')};
+$('#mu_drv').onclick=()=>{ta.setRangeText(MUSDRV,ta.selectionStart,ta.selectionEnd,'end');upd()};
+/* ───── audio (APU semplificata: 2 pulse, triangolo, rumore; niente DMC) ───── */
+const LT=[10,254,20,2,40,4,80,6,160,8,60,10,14,12,26,14,12,16,24,18,48,20,96,22,192,24,72,26,16,28,32,30],NZ=[4,8,16,32,64,96,128,160,202,254,380,508,762,1016,2034,4068];
+const ar=new Uint8Array(24),lc=[0,0,0,0],ev_=[15,15,0,15],es=[0,0,0,0],ec=[0,0,0,0];let en=0,lin=0,lr=0,ac=null,ch=[],mute=0,WV=[],dsrc=null;const pp=[0,0],sw=[0,0],swr=[0,0];
+function apuW(a,v){ar[a-0x4000]=v;
+ if(a==0x4002||a==0x4003||a==0x4006||a==0x4007){const i=a>0x4005?1:0;pp[i]=ar[i*4+2]|(ar[i*4+3]&7)<<8}else if(a==0x4001||a==0x4005)swr[a>0x4004?1:0]=1;
+if(a==0x4015){en=v;for(let i=0;i<4;i++)if(!(v>>i&1))lc[i]=0;if(v&16)dmcPlay()}
+ else if(a==0x4003||a==0x4007||a==0x400B||a==0x400F){const i=a-0x4003>>2;if(en>>i&1)lc[i]=LT[v>>3];es[i]=1;if(i==2)lr=1}}
+function apuFrame(){
+ for(let q=0;q<4;q++){for(const i of[0,1,3]){const r=ar[i*4];if(es[i]){es[i]=0;ev_[i]=15;ec[i]=r&15}else if(ec[i]--<=0){ec[i]=r&15;if(ev_[i]>0)ev_[i]--;else if(r&32)ev_[i]=15}}
+  if(lr)lin=ar[8]&127;else if(lin>0)lin--;if(!(ar[8]&128))lr=0}
+ for(let i=0;i<4;i++)if(lc[i]>0&&!(ar[i*4]&(i==2?128:32)))lc[i]=Math.max(0,lc[i]-2);
+ for(let h=0;h<2;h++)for(let i=0;i<2;i++){const r=ar[i*4+1],sh=r&7,d=pp[i]>>sh,tg=pp[i]+(r&8?-d-(i?0:1):d);
+  if(sw[i]<=0&&(r&128)&&sh&&pp[i]>=8&&tg<=0x7FF&&tg>=0)pp[i]=tg;if(sw[i]<=0||swr[i]){sw[i]=r>>4&7;swr[i]=0}else sw[i]--}
+ if(!ac)return;const t=ac.currentTime,V=(1-mute)*.12;
+ for(let i=0;i<2;i++){const r=ar[i*4],pr=pp[i],on=lc[i]>0&&pr>7&&(en>>i&1),c=ch[i];
+  c.gn.gain.setTargetAtTime(on?(r&16?r&15:ev_[i])/15*V:0,t,.01);if(on){c.o.frequency.setTargetAtTime(CPU/(16*(pr+1)),t,.005);if(c.d!=r>>6){c.d=r>>6;c.o.setPeriodicWave(WV[c.d])}}}
+ const pt=ar[10]|(ar[11]&7)<<8,ton=lc[2]>0&&lin>0&&pt>1&&(en&4);ch[2].gn.gain.setTargetAtTime(ton?V*1.3:0,t,.01);if(ton)ch[2].o.frequency.setTargetAtTime(CPU/(32*(pt+1)),t,.005);
+ const nv=ar[12]&16?ar[12]&15:ev_[3],non=lc[3]>0&&(en&8);ch[3].gn.gain.setTargetAtTime(non?nv/15*V:0,t,.01);ch[3].s.playbackRate.setTargetAtTime(CPU/NZ[ar[14]&15]/ac.sampleRate,t,.005)}
+const DR=[428,380,340,320,286,254,226,214,190,160,142,128,106,84,72,54];
+function dmcDecode(){const a=0xC000+ar[0x12]*64,n=ar[0x13]*16+1,out=[];let lv=ar[0x11]&127;
+ for(let i=0;i<n;i++){let ad=a+i;if(ad>0xFFFF)ad-=0x8000;const b=rd(ad);for(let k=0;k<8;k++){if(b>>k&1){if(lv<=125)lv+=2}else if(lv>=2)lv-=2;out.push(lv)}}
+ return{lv:out,rate:CPU/DR[ar[0x10]&15]}}
+function dmcPlay(){if(!ac||mute||!prg)return;const d=dmcDecode(),sr=ac.sampleRate,n=Math.max(1,Math.floor(d.lv.length*sr/d.rate)),b=ac.createBuffer(1,n,sr),x=b.getChannelData(0);
+ for(let i=0;i<n;i++)x[i]=(d.lv[Math.min(d.lv.length-1,i*d.rate/sr|0)]-64)/64*.3;
+ if(dsrc)try{dsrc.stop()}catch(e){}dsrc=ac.createBufferSource();dsrc.buffer=b;dsrc.loop=!!(ar[0x10]&0x40);dsrc.connect(ch.mx);dsrc.start()}
+function initAudio(){if(ac){ac.resume();return}const C=window.AudioContext||window.webkitAudioContext;if(!C)return;ac=new C();
+ WV=[.125,.25,.5,.75].map(d=>{const re=new Float32Array(33),im=new Float32Array(33);for(let n=1;n<33;n++){re[n]=2/(n*Math.PI)*Math.sin(n*Math.PI*d);im[n]=2/(n*Math.PI)*(1-Math.cos(n*Math.PI*d))}return ac.createPeriodicWave(re,im)});
+ const mix=ch.mx=ac.createGain();mix.connect(ac.destination);
+ for(let i=0;i<3;i++){const o=ac.createOscillator(),gn=ac.createGain();gn.gain.value=0;if(i<2)o.setPeriodicWave(WV[2]);else o.type='triangle';o.connect(gn);gn.connect(mix);o.start();ch[i]={o,gn,d:2}}
+ const nb=ac.createBuffer(1,ac.sampleRate,ac.sampleRate),d=nb.getChannelData(0);for(let k=0;k<d.length;k++)d[k]=Math.random()*2-1;
+ const s=ac.createBufferSource(),gn=ac.createGain();s.buffer=nb;s.loop=true;gn.gain.value=0;s.connect(gn);gn.connect(mix);s.start();ch[3]={s,gn}}
+/* ───── debugger ───── */
+const hx=(v,n)=>v.toString(16).toUpperCase().padStart(n,'0');
+function dis(a){const o=rd(a),d=D[o];if(!d)return['.byte $'+hx(o,2),1];const[m,md]=d,b=rd(a+1),w=b|rd(a+2)<<8,B='$'+hx(b,2),W='$'+hx(w,4);
+ return{n:[m,1],c:[m+' A',1],i:[m+' #'+B,2],z:[m+' '+B,2],zx:[m+' '+B+',X',2],zy:[m+' '+B+',Y',2],a:[m+' '+W,3],ax:[m+' '+W+',X',3],ay:[m+' '+W+',Y',3],ix:[m+' ('+B+',X)',2],iy:[m+' ('+B+'),Y',2],ind:[m+' ('+W+')',3],r:[m+' $'+hx(a+2+(b<128?b:b-256)&65535,4),2]}[md]}
+const peek=a=>a<0x2000?ram[a&2047]:a>=0x8000?rd(a):0;
+function dbg(){if(!prg)return;let bv=-1,bn='';for(const k in SYMS)if(SYMS[k]<=pc&&SYMS[k]>=0x8000&&SYMS[k]>bv){bv=SYMS[k];bn=k}
+ let o=`PC=$${hx(pc,4)}${bn?' ('+bn+'+'+(pc-bv)+')':''}  A=${hx(A,2)} X=${hx(X,2)} Y=${hx(Y,2)} SP=${hx(sp,2)}  `+(fn?'N':'n')+(fv?'V':'v')+'--'+(fd?'D':'d')+(fi?'I':'i')+(fz?'Z':'z')+(fc?'C':'c')+'\n\n';
+ for(let i=0,a=pc;i<8;i++){const[t,l]=dis(a);o+=(i?'  ':'> ')+'$'+hx(a,4)+'  '+t+'\n';a=a+l&65535}
+ const m=(parseInt($('#dm').value,16)||0)&0xFFF0;o+='\nMemoria:\n';for(let r=0;r<6;r++){o+='$'+hx(m+r*16,4)+': ';for(let k=0;k<16;k++)o+=hx(peek(m+r*16+k&65535),2)+' ';o+='\n'}
+ $('#dv').textContent=o;viewers()}
+$('#d_s').onclick=()=>{if(!prg)return;setRun(0);skipbp=1;step();dbg()};
+$('#d_f').onclick=()=>{if(!prg)return;setRun(0);try{frame()}catch(e){}dbg()};
+$('#d_c').onclick=()=>{if(prg){skipbp=1;setRun(1)}};
+$('#dbp').onchange=e=>{const v=parseInt(e.target.value,16);bp_=isNaN(v)?-1:v};$('#dm').onchange=dbg;
+$('#mute').onclick=e=>{mute^=1;e.target.textContent=mute?'🔇 MUTO':'🔊 AUDIO'};
+const LS=[];
+function frame(){vb=0;hit=0;cyc=0;for(let y=0;y<240;y++){while(cyc<y*LN)step();LS[y]=[scx,scy,ctrl];if(mp==4&&mask&24)clk4()}while(cyc<VB)step();vb=1;if(ctrl&128)nmi();while(cyc<TOT)step();render();apuFrame()}
+function load(rom){
+ if(rom[0]!=78||rom[1]!=69||rom[2]!=83)throw Error('non è un file .nes valido');
+ np=rom[4];nc=rom[5];mir=rom[6]&1;mp=rom[6]>>4|rom[7]&240;prg=rom.slice(16,16+np*16384);crom=nc?rom.slice(16+np*16384,16+np*16384+nc*8192):new Uint8Array(8192);chr=crom.slice(0,8192);pb=0;mr=16;mg=[12,0,0,0];m4r=[0,2,4,5,6,7,0,1];m4s=m4l=m4e=m4rl=m4c=irqp=0;pb4=[0,1,np*2-2,np*2-1];if(mp==4)m4u();ar.fill(0);lc.fill(0);en=lin=lr=0;
+ ram.fill(0);vram.fill(0);oam.fill(0);pal.fill(0);A=X=Y=0;sp=253;fc=fz=fd=fv=fn=0;fi=1;ctrl=mask=vb=hit=w=va=tv=buf=oa=scx=scy=sh=cyc=0;
+ pc=rd(0xfffc)|rd(0xfffd)<<8;ROM=rom;RB=[];if(!dirty)ech.set(chr);setRun(1);drawChr()}
+function setRun(v){run=v;if(!v&&ac)ch.forEach(c=>c.gn.gain.value=0);if(v)skipbp=1;$('#pause').textContent=v?'⏸ PAUSA':'▶ RIPRENDI';$('#st').textContent=v?'In esecuzione. Clicca lo schermo per usare la tastiera.':'In pausa.';if(prg)dbg()}
+let last=0,acc=0,fr=0;
+function tick(t){if(run){acc+=Math.min(t-last,100);try{while(acc>=FT){if(rw&&RB.length)rest_(RB.pop());frame();acc-=FT;if(!rw&&++rc%6==0){RB.push(snap_());if(RB.length>200)RB.shift()}if(++fr%10==0&&$('#dbg').open)dbg()}}catch(e){setRun(0);if(e=='bp')log('⏸ Breakpoint a $'+hx(pc,4),'ok');else log('✖ Errore di esecuzione: '+e.message,'er')}}last=t;requestAnimationFrame(tick)}
+const K={ArrowRight:128,ArrowLeft:64,ArrowDown:32,ArrowUp:16,Enter:8,ShiftLeft:4,ShiftRight:4,KeyX:1,KeyZ:2},scr=$('#scr');
+scr.onkeydown=e=>{if(K[e.code]){pad|=K[e.code];e.preventDefault()}};
+scr.onkeyup=e=>{if(K[e.code]){pad&=~K[e.code];e.preventDefault()}};
+scr.onblur=()=>pad=0;
+
+/* ───── editor e interfaccia ───── */
+const ta=$('#ta'),hl=$('#hl'),ln=$('#ln'),con=$('#con');
+const E=s=>s.replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+function hi(s){let o='',l=0,m;const r=/(;.*)|(\.[a-z]\w*)|(\$[0-9a-f]+|%[01]+|\b\d+\b)|([a-z_]\w*:)|\b([a-z]{3})\b/gi;
+ while(m=r.exec(s)){o+=E(s.slice(l,m.index));l=r.lastIndex;const c=m[1]?'c':m[2]?'d':m[3]?'n':m[4]?'l':MN[m[5].toUpperCase()]?'m':'';o+=c?`<i class="${c}">${E(m[0])}</i>`:E(m[0])}
+ return o+E(s.slice(l))+'\n'}
+function upd(){hl.innerHTML=hi(ta.value);ln.textContent=Array.from({length:ta.value.split('\n').length},(_,i)=>i+1).join('\n');FILES[CUR]=ta.value;try{localStorage.setItem('nes_ide_proj',JSON.stringify({FILES,CUR,MAIN}))}catch(e){}}
+ta.oninput=upd;ta.onscroll=()=>{hl.scrollTop=ln.scrollTop=ta.scrollTop;hl.scrollLeft=ta.scrollLeft};
+ta.onkeydown=e=>{if(e.key=='Tab'){e.preventDefault();document.execCommand('insertText',false,'  ')}else if(((e.ctrlKey||e.metaKey)&&e.key=='Enter')||e.key=='F9'){e.preventDefault();go()}};
+function log(t,c,n,fl){const d=document.createElement('div');d.className=c||'';d.textContent=t;if(n){d.dataset.n=n;if(fl)d.dataset.f=fl;d.style.cursor='pointer'}con.appendChild(d);con.scrollTop=1e9}
+con.onclick=e=>{const n=+e.target.dataset.n;if(!n)return;const fl=e.target.dataset.f;if(fl&&fl!=CUR)openFile(fl);const i=ta.value.split('\n').slice(0,n-1).reduce((s,l)=>s+l.length+1,0);ta.focus();ta.setSelectionRange(i,i);ta.scrollTop=Math.max(0,(n-4)*20)};
+function build(){con.textContent='';try{const r=asm();ROM=r.rom;SYMS=r.sym;fillSy();
+  log(`✔ Assemblato: ${r.used} byte di codice e dati, ${Object.keys(r.sym).length} simboli`,'ok');
+  log(Object.entries(r.sym).filter(([,v])=>v>=0x8000).map(([k,v])=>k+'=$'+v.toString(16).toUpperCase()).join('  '));r.warn.slice(0,20).forEach(w=>log('⚠ '+(w.f?w.f+' ':'')+'riga '+w.n+': '+w.m,'wn',w.n,w.f));return 1}
+ catch(e){log('✖ '+(e.f?e.f+' ':'')+(e.n?'riga '+e.n+': ':'')+e.message,'er',e.n,e.f);return 0}}
+function go(){initAudio();if(mti)muToggle();if(mud)applyMu();if(dirty)applyGfx();if(ntd)applyNt();if(msd)applyMs();if(!build())return;load(ROM);scr.focus()}
+function dl(name,data,type){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([data],{type}));a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1e3)}
+$('#run').onclick=go;
+$('#pause').onclick=()=>{if(prg)setRun(!run)};
+$('#rst').onclick=()=>{if(ROM)load(ROM)};
+$('#nes').onclick=()=>{if(build())dl('gioco.nes',ROM,'application/octet-stream')};
+$('#save').onclick=()=>dl(CUR,ta.value,'text/plain');
+$('#zip').onclick=()=>{FILES[CUR]=ta.value;dl('progetto.zip',zip(FILES),'application/zip')};
+$('#open').onclick=()=>$('#fi').click();
+$('#fi').onchange=async e=>{const f=e.target.files[0];if(!f)return;
+ if(/\.nes$/i.test(f.name)){try{dirty=0;load(new Uint8Array(await f.arrayBuffer()));con.textContent='';log('✔ ROM caricata: '+f.name,'ok')}catch(x){log('✖ '+x.message,'er')}}
+ else if(/\.zip$/i.test(f.name)){try{const o=await unzip(await f.arrayBuffer());if(!Object.keys(o).length)throw Error('nessun file di testo nello zip');setProj(o);con.textContent='';log('✔ Progetto aperto: '+Object.keys(o).length+' file','ok')}catch(x){log('✖ '+x.message,'er')}}
+ else{FILES[CUR]=ta.value;FILES[f.name]=await f.text();openFile(f.name);dirty=0;relo()}e.target.value=''};
+const EX=[`; Sprite mosso con la croce direzionale
+.mirror v
+PPUCTRL=$2000
+PPUMASK=$2001
+PPUSTATUS=$2002
+OAMADDR=$2003
+PPUSCROLL=$2005
+PPUADDR=$2006
+PPUDATA=$2007
+OAMDMA=$4014
+JOY=$4016
+OAM=$0200       ; copia degli sprite in RAM
+px=$00          ; variabili in zero page
+py=$01
+pad=$02
+
+.org $8000
+reset:
+  sei
+  cld
+  ldx #$FF
+  txs
+  inx
+  stx PPUCTRL
+  stx PPUMASK
+vb1: bit PPUSTATUS
+  bpl vb1
+  lda #$FF        ; nasconde tutti gli sprite
+hide: sta OAM,x
+  inx
+  bne hide
+vb2: bit PPUSTATUS
+  bpl vb2
+
+  lda #$3F        ; palette a $3F00
+  sta PPUADDR
+  lda #$00
+  sta PPUADDR
+  ldx #0
+pal: lda palette,x
+  sta PPUDATA
+  inx
+  cpx #32
+  bne pal
+
+  lda #$21        ; due righe di mattoni a $2100
+  sta PPUADDR
+  lda #$00
+  sta PPUADDR
+  ldx #32
+row: lda #1
+  sta PPUDATA
+  lda #2
+  sta PPUDATA
+  dex
+  bne row
+
+  lda #124
+  sta px
+  lda #116
+  sta py
+  lda #%10000000  ; abilita NMI
+  sta PPUCTRL
+  lda #%00011110  ; sfondo e sprite visibili
+  sta PPUMASK
+forever: jmp forever
+
+nmi:
+  lda #0
+  sta OAMADDR
+  lda #>OAM       ; DMA degli sprite
+  sta OAMDMA
+  lda #1          ; legge il controller
+  sta JOY
+  lda #0
+  sta JOY
+  ldx #8
+read: lda JOY
+  lsr a
+  rol pad         ; A=$80 B=$40 Sel=$20 Start=$10 Su=$08 Giu=$04 Sx=$02 Dx=$01
+  dex
+  bne read
+  lda pad
+  and #$01
+  beq nr
+  inc px
+nr: lda pad
+  and #$02
+  beq nl
+  dec px
+nl: lda pad
+  and #$08
+  beq nu
+  dec py
+nu: lda pad
+  and #$04
+  beq nd
+  inc py
+nd: lda py
+  sta OAM
+  lda #3
+  sta OAM+1
+  lda #0
+  sta OAM+2
+  lda px
+  sta OAM+3
+  lda #0
+  sta PPUSCROLL
+  sta PPUSCROLL
+  rti
+
+palette:
+  .byte $21,$16,$06,$26, $21,$0A,$1A,$2A, $21,$02,$12,$22, $21,$08,$18,$28
+  .byte $21,$30,$27,$16, $21,$11,$21,$31, $21,$09,$19,$29, $21,$0C,$1C,$2C
+
+.chr 1            ; tile 1: mattone A
+.tile 11111112
+.tile 11111112
+.tile 11111112
+.tile 22222222
+.tile 11121111
+.tile 11121111
+.tile 11121111
+.tile 22222222
+.tile 33333332    ; tile 2: mattone B
+.tile 33333332
+.tile 33333332
+.tile 22222222
+.tile 33323333
+.tile 33323333
+.tile 33323333
+.tile 22222222
+.tile ..3333..    ; tile 3: pallina
+.tile .322223.
+.tile 32211223
+.tile 32111123
+.tile 32111123
+.tile 32211223
+.tile .322223.
+.tile ..3333..
+
+.org $FFFA
+.word nmi, reset, 0
+`,`; Modello vuoto
+.mirror v
+.org $8000
+reset:
+  sei
+  ldx #$FF
+  txs
+loop:
+  jmp loop
+nmi:
+  rti
+
+.org $FFFA
+.word nmi, reset, 0
+`];
+
+const TL=EX[0].slice(EX[0].indexOf('.chr 1'),EX[0].indexOf('.org $FFFA'));
+EX.push(`; Schermata disegnata con l’editor schermate
+.mirror v
+PPUCTRL=$2000
+PPUMASK=$2001
+PPUSTATUS=$2002
+PPUADDR=$2006
+PPUDATA=$2007
+ptr=$10
+.org $8000
+reset:
+  sei
+  ldx #$FF
+  txs
+  inx
+  stx PPUCTRL
+  stx PPUMASK
+vb1: bit PPUSTATUS
+  bpl vb1
+vb2: bit PPUSTATUS
+  bpl vb2
+  lda #$3F        ; palette di sfondo
+  sta PPUADDR
+  lda #0
+  sta PPUADDR
+  ldx #0
+pal: lda screen_pal,x
+  sta PPUDATA
+  inx
+  cpx #16
+  bne pal
+  lda #$20        ; copia i 1024 byte della schermata
+  sta PPUADDR
+  lda #0
+  sta PPUADDR
+  lda #<screen
+  sta ptr
+  lda #>screen
+  sta ptr+1
+  ldx #4
+  ldy #0
+copy: lda (ptr),y
+  sta PPUDATA
+  iny
+  bne copy
+  inc ptr+1
+  dex
+  bne copy
+  lda #0
+  sta $2005
+  sta $2005
+  lda #%00001010
+  sta PPUMASK
+forever: jmp forever
+nmi: rti
+
+`+TL+`.org $FFFA
+.word nmi, reset, 0
+`);
+/* ───── progetti: più file, .include, macro, zip ───── */
+let FILES={'main.asm':''},CUR='main.asm',MAIN='main.asm';
+const toMain=()=>{if(CUR!=MAIN)openFile(MAIN)};
+function setProj(f,cur,main){FILES=f;MAIN=main||(f['main.asm']!=null?'main.asm':Object.keys(f)[0]);CUR=cur&&f[cur]!=null?cur:MAIN;ta.value=FILES[CUR];upd();tabs()}
+function openFile(n){FILES[CUR]=ta.value;CUR=n;ta.value=FILES[n];upd();tabs();ta.scrollTop=0}
+function tabs(){$('#tabs').innerHTML=Object.keys(FILES).map(n=>`<button data-f="${E(n)}" class="${n==CUR?'on':''}">${E(n)}${n==MAIN?' ★':''}</button>`).join('')+'<button data-a="new" title="Nuovo file">＋</button><button data-a="ren" title="Rinomina">✎</button><button data-a="del" title="Elimina">✕</button>'}
+$('#tabs').onclick=e=>{const b=e.target.closest('button');if(!b)return;const a=b.dataset.a;
+ if(!a)openFile(b.dataset.f);
+ else if(a=='new'){const n=prompt('Nome del nuovo file','nuovo.asm');if(n&&!(n in FILES)){FILES[CUR]=ta.value;FILES[n]='';openFile(n)}}
+ else if(a=='ren'){const n=prompt('Nuovo nome',CUR);if(n&&n!=CUR&&!(n in FILES)&&CUR!=MAIN){FILES[n]=ta.value;delete FILES[CUR];CUR=n;upd();tabs()}}
+ else if(CUR!=MAIN&&confirm('Eliminare '+CUR+'?')){const d=CUR;CUR=MAIN;delete FILES[d];ta.value=FILES[MAIN];upd();tabs()}};
+function prep(main){const out=[],map=[],mac={};let uid=0;
+ const sp=s=>{let d=0,c='';const r=[];for(const ch of s){if(ch=='(')d++;if(ch==')')d--;if(ch==','&&!d){r.push(c);c=''}else c+=ch}if(c.trim()||r.length)r.push(c);return r.map(x=>x.trim())};
+ const er=(f,n,m)=>Object.assign(Error(m),{f,n});
+ function run(L,d){if(d>30)throw er(L[0][1],L[0][2],'macro o include annidati troppo a fondo');
+  for(let i=0;i<L.length;i++){const[l,f,n]=L[i],t=l.replace(/;.*/,'').trim();let m;
+   if(m=/^\.include\s+"([^"]+)"/i.exec(t)){if(!(m[1] in FILES))throw er(f,n,'file non trovato: '+m[1]);run(FILES[m[1]].split('\n').map((x,k)=>[x,m[1],k+1]),d+1);continue}
+   if(m=/^\.(macro|rept)\b\s*(.*)/i.exec(t)){const k=m[1].toLowerCase(),b=[];let j=i+1;for(;j<L.length&&!/^\s*\.end(macro|m|rept)\b/i.test(L[j][0]);j++)b.push(L[j]);if(j>=L.length)throw er(f,n,'manca .end'+k);i=j;
+    if(k=='rept'){for(let r=+m[2]|0;r>0;r--)run(b,d+1)}else{const q=/^(\w+)\s*(.*)/.exec(m[2]);if(!q)throw er(f,n,'.macro senza nome');mac[q[1].toLowerCase()]={p:sp(q[2]).filter(Boolean),b}}continue}
+   const lab=/^(?:[A-Za-z_]\w*:\s*)*/.exec(t)[0],w=/^(\w+)\s*(.*)$/.exec(t.slice(lab.length)),M=w&&mac[w[1].toLowerCase()];
+   if(M){if(lab){out.push(lab.trim());map.push([f,n])}const a=sp(w[2]),id=++uid;
+    run(M.b.map(([x,bf,bn])=>{let y=x;M.p.forEach((p,k)=>{y=y.replace(new RegExp('\\b'+p+'\\b','g'),()=>a[k]??'')});return[y.replace(/@(\w+)/g,'__m'+id+'_$1'),bf,bn]}),d+1);continue}
+   out.push(l);map.push([f,n])}}
+ if(!(main in FILES))throw Error('file principale mancante: '+main);
+ run(FILES[main].split('\n').map((x,k)=>[x,main,k+1]),0);
+ let sc='';const text=out.map(l=>{const g=/^\s*([A-Za-z_]\w*):/.exec(l);if(g&&!g[1].startsWith('__'))sc=g[1];return l.replace(/@(\w+)/g,(_,x)=>sc+'__'+x)});
+ return{text:text.join('\n'),map}}
+const asm=()=>{FILES[CUR]=ta.value;const r=prep(MAIN);return assemble(r.text,r.map)};
+const crcT=(()=>{const t=[];for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=c&1?0xEDB88320^c>>>1:c>>>1;t[n]=c>>>0}return t})();
+const crc=b=>{let c=-1;for(const x of b)c=crcT[(c^x)&255]^c>>>8;return(c^-1)>>>0};
+function zip(files){const enc=new TextEncoder(),parts=[],cd=[];let off=0;
+ for(const[n,t]of Object.entries(files)){const nb=enc.encode(n),d=enc.encode(t),c=crc(d),h=new DataView(new ArrayBuffer(30)),e=new DataView(new ArrayBuffer(46));
+  h.setUint32(0,0x04034b50,true);h.setUint16(4,20,true);h.setUint32(14,c,true);h.setUint32(18,d.length,true);h.setUint32(22,d.length,true);h.setUint16(26,nb.length,true);
+  e.setUint32(0,0x02014b50,true);e.setUint16(4,20,true);e.setUint16(6,20,true);e.setUint32(16,c,true);e.setUint32(20,d.length,true);e.setUint32(24,d.length,true);e.setUint16(28,nb.length,true);e.setUint32(42,off,true);
+  parts.push(new Uint8Array(h.buffer),nb,d);cd.push(new Uint8Array(e.buffer),nb);off+=30+nb.length+d.length}
+ const z=new DataView(new ArrayBuffer(22));z.setUint32(0,0x06054b50,true);z.setUint16(8,cd.length/2,true);z.setUint16(10,cd.length/2,true);z.setUint32(12,cd.reduce((s,x)=>s+x.length,0),true);z.setUint32(16,off,true);
+ return new Blob([...parts,...cd,z.buffer],{type:'application/zip'})}
+async function unzip(buf){const u=new Uint8Array(buf),v=new DataView(buf),dec=new TextDecoder(),o={};let e=u.length-22;while(e>=0&&v.getUint32(e,true)!=0x06054b50)e--;if(e<0)throw Error('zip non valido');
+ let p=v.getUint32(e+16,true);const n=v.getUint16(e+10,true);
+ for(let i=0;i<n;i++){const m=v.getUint16(p+10,true),cs=v.getUint32(p+20,true),nl=v.getUint16(p+28,true),xl=v.getUint16(p+30,true),cl=v.getUint16(p+32,true),lo=v.getUint32(p+42,true),name=dec.decode(u.subarray(p+46,p+46+nl));p+=46+nl+xl+cl;
+  if(name.endsWith('/')||!/\.(asm|inc|s|txt)$/i.test(name))continue;const ds=lo+30+v.getUint16(lo+26,true)+v.getUint16(lo+28,true);let d=u.subarray(ds,ds+cs);
+  if(m==8)d=new Uint8Array(await new Response(new Blob([d]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).arrayBuffer());else if(m)throw Error('compressione zip non supportata');
+  o[name.split('/').pop()]=dec.decode(d)}return o}
+EX.push({'nes.inc':`; nes.inc - registri e macro comuni
+PPUCTRL=$2000
+PPUMASK=$2001
+PPUSTATUS=$2002
+PPUSCROLL=$2005
+PPUADDR=$2006
+PPUDATA=$2007
+
+.macro vblank_wait
+@w: bit PPUSTATUS
+  bpl @w
+.endmacro
+
+.macro ppu_addr hi, lo
+  lda #hi
+  sta PPUADDR
+  lda #lo
+  sta PPUADDR
+.endmacro
+
+.macro load_palette label
+  ppu_addr $3F, $00
+  ldx #0
+@l: lda label,x
+  sta PPUDATA
+  inx
+  cpx #32
+  bne @l
+.endmacro
+`,'main.asm':`; Progetto con più file: usa nes.inc (costanti e macro) e gfx.asm (dati)
+.mirror v
+.include "nes.inc"
+.org $8000
+reset:
+  sei
+  cld
+  ldx #$FF
+  txs
+  inx
+  stx PPUCTRL
+  stx PPUMASK
+  vblank_wait
+  vblank_wait
+  load_palette palette
+  ppu_addr $21, $00
+  ldx #64
+@row: lda #1
+  sta PPUDATA
+  dex
+  bne @row
+  lda #0
+  sta PPUSCROLL
+  sta PPUSCROLL
+  lda #%00001010
+  sta PPUMASK
+forever: jmp forever
+nmi: rti
+.include "gfx.asm"
+.org $FFFA
+.word nmi, reset, 0
+`,'gfx.asm':`; gfx.asm - palette e tile
+palette:
+  .byte $21,$16,$06,$26, $21,$0A,$1A,$2A, $21,$02,$12,$22, $21,$08,$18,$28
+  .byte $21,$30,$27,$16, $21,$11,$21,$31, $21,$09,$19,$29, $21,$0C,$1C,$2C
+`+TL});
+/* ───── giochi di esempio: Pong e Meteore (progetti con più file) ───── */
+{const R=(t,n=1)=>('.tile '+t+'\n').repeat(n);
+const FONT='; font.asm - cifre 0-9 nei tile 16-25 (colore 1)\n.chr 16\n'+['6999996','2622227','691248F','6916196','1359F11','F8E1196','68E9996','F112444','6996996','6997196'].map(d=>[...d].map(h=>{const n=parseInt(h,16);return R([8,4,2,1].map(b=>n&b?'1':'.').join('')+'....')}).join('')+R('........')).join('');
+const INC=EX[3]['nes.inc'],HEAD=`.mirror v
+.include "nes.inc"
+.include "font.asm"
+OAMADDR=$2003
+OAMDMA=$4014
+JOY=$4016
+OAM=$0200
+`,BOOT=(init)=>`.org $8000
+reset:
+  sei
+  cld
+  ldx #$FF
+  txs
+  inx
+  stx PPUCTRL
+  stx PPUMASK
+  vblank_wait
+  lda #$FF          ; nasconde tutti gli sprite
+@h: sta OAM,x
+  inx
+  bne @h
+  vblank_wait
+  ldx #0            ; copia gli sprite iniziali
+@i: lda sprinit,x
+  sta OAM,x
+  inx
+  cpx #${init}
+  bne @i
+  load_palette palette
+`,READ=`  lda #1            ; legge il controller
+  sta JOY
+  lda #0
+  sta JOY
+  ldx #8
+@r: lda JOY
+  lsr a
+  rol pad           ; A=$80 B=$40 Sel=$20 Start=$10 Su=$08 Giu=$04 Sx=$02 Dx=$01
+  dex
+  bne @r
+`,NMI0=`nmi:
+  pha
+  txa
+  pha
+  tya
+  pha
+  lda #0
+  sta OAMADDR
+  lda #>OAM
+  sta OAMDMA
+`,END=`  lda #0
+  sta PPUSCROLL
+  sta PPUSCROLL
+  pla
+  tay
+  pla
+  tax
+  pla
+  rti
+`,VEC=`
+.org $FFFA
+.word nmi, reset, 0
+`;
+EX.push({'main.asm':`; PONG - tu a sinistra (frecce su/giù), la CPU a destra. Il primo a 10 punti azzera il tabellone.
+`+HEAD+`py=$00
+cy=$01
+bx=$02
+by=$03
+bdx=$04
+bdy=$05
+s1=$06
+s2=$07
+pad=$08
+wait=$09
+tmp=$0A
+`+BOOT(36)+`  lda #%00000100     ; scrive in colonna (+32): linea centrale
+  sta PPUCTRL
+  ppu_addr $20, $50
+  ldx #26
+  lda #3
+@c: sta PPUDATA
+  dex
+  bne @c
+  lda #0
+  sta s1
+  sta s2
+  lda #88
+  sta py
+  sta cy
+  jsr serve
+  lda #0
+  sta PPUSCROLL
+  sta PPUSCROLL
+  lda #%10000000
+  sta PPUCTRL
+  lda #%00011110
+  sta PPUMASK
+forever: jmp forever
+
+serve:
+  lda #124
+  sta bx
+  lda #108
+  sta by
+  lda #2
+  sta bdx
+  lda #1
+  sta bdy
+  lda #45
+  sta wait
+  rts
+
+`+NMI0+READ+`  lda pad            ; racchetta del giocatore
+  and #$08
+  beq @nu
+  lda py
+  cmp #20
+  bcc @nu
+  sec
+  sbc #2
+  sta py
+@nu: lda pad
+  and #$04
+  beq @nd
+  lda py
+  cmp #200
+  bcs @nd
+  clc
+  adc #2
+  sta py
+@nd: lda by          ; la CPU insegue la palla (più lenta di te)
+  sec
+  sbc #8
+  sta tmp
+  lda cy
+  cmp tmp
+  beq @cd
+  bcc @dn
+  dec cy
+  jmp @cd
+@dn: inc cy
+@cd: lda wait
+  beq @go
+  dec wait
+  jmp @draw
+@go: lda bx
+  clc
+  adc bdx
+  sta bx
+  lda by
+  clc
+  adc bdy
+  sta by
+  cmp #16            ; rimbalzo su muro alto e basso
+  bcs @t1
+  lda #1
+  sta bdy
+@t1: lda by
+  cmp #224
+  bcc @t2
+  lda #$FF
+  sta bdy
+@t2: lda bx
+  cmp #24
+  bcs @rp
+  cmp #8
+  bcc @miss1
+  lda by
+  clc
+  adc #8
+  cmp py
+  bcc @rp
+  lda py
+  clc
+  adc #24
+  cmp by
+  bcc @rp
+  lda #2             ; colpita la racchetta sinistra
+  sta bdx
+  jmp @draw
+@miss1: inc s2
+  jmp @sc
+@rp: lda bx
+  cmp #224
+  bcc @draw
+  cmp #248
+  bcs @miss2
+  lda by
+  clc
+  adc #8
+  cmp cy
+  bcc @draw
+  lda cy
+  clc
+  adc #24
+  cmp by
+  bcc @draw
+  lda #$FE           ; colpita la racchetta destra
+  sta bdx
+  jmp @draw
+@miss2: inc s1
+@sc: jsr serve
+  lda s1
+  cmp #10
+  bcs @z
+  lda s2
+  cmp #10
+  bcc @draw
+@z: lda #0
+  sta s1
+  sta s2
+@draw: lda py
+  sta OAM
+  clc
+  adc #8
+  sta OAM+4
+  clc
+  adc #8
+  sta OAM+8
+  lda cy
+  sta OAM+12
+  clc
+  adc #8
+  sta OAM+16
+  clc
+  adc #8
+  sta OAM+20
+  lda by
+  sta OAM+24
+  lda bx
+  sta OAM+27
+  lda s1
+  clc
+  adc #16
+  sta OAM+29
+  lda s2
+  clc
+  adc #16
+  sta OAM+33
+`+END+`
+sprinit:
+  .byte 88,1,0,16, 96,1,0,16, 104,1,0,16
+  .byte 88,1,0,232, 96,1,0,232, 104,1,0,232
+  .byte 108,2,0,124
+  .byte 16,16,0,104, 16,16,0,144
+palette:
+.rept 4
+  .byte $0F,$2D,$10,$30
+.endrept
+.rept 4
+  .byte $0F,$30,$27,$16
+.endrept
+.chr 1
+`+R('22222222',8)+R('..1111..')+R('.111111.')+R('11111111',4)+R('.111111.')+R('..1111..')+R('...11...',4)+R('........',4)+VEC,'nes.inc':INC,'font.asm':FONT});
+EX.push({'main.asm':`; METEORE - schiva le rocce che cadono: frecce sinistra/destra. Se ti colpiscono: Start per ricominciare.
+`+HEAD+`px=$00
+state=$01
+pad=$02
+rnd=$03
+su=$04
+st=$05
+rx=$10
+ry=$13
+`+BOOT(24)+`  lda #$A5
+  sta rnd
+  ppu_addr $23, $60  ; il terreno
+  ldx #32
+  lda #3
+@f: sta PPUDATA
+  dex
+  bne @f
+  jsr newgame
+  lda #0
+  sta PPUSCROLL
+  sta PPUSCROLL
+  lda #%10000000
+  sta PPUCTRL
+  lda #%00011110
+  sta PPUMASK
+forever: jmp forever
+
+rand:
+  lda rnd
+  asl a
+  bcc @n
+  eor #$1D
+@n: sta rnd
+  rts
+
+addscore:
+  inc su
+  lda su
+  cmp #10
+  bcc @d
+  lda #0
+  sta su
+  inc st
+  lda st
+  cmp #10
+  bcc @d
+  lda #9
+  sta st
+  sta su
+@d: rts
+
+newgame:
+  lda #120
+  sta px
+  lda #0
+  sta state
+  sta su
+  sta st
+  ldx #2
+@n: jsr rand
+  and #$F8
+  sta rx,x
+  lda starty,x
+  sta ry,x
+  dex
+  bpl @n
+  rts
+
+`+NMI0+READ+`  lda state
+  beq @play
+  jmp @over
+@play: lda pad
+  and #$02
+  beq @nl
+  lda px
+  cmp #4
+  bcc @nl
+  sec
+  sbc #3
+  sta px
+@nl: lda pad
+  and #$01
+  beq @nr
+  lda px
+  cmp #244
+  bcs @nr
+  clc
+  adc #3
+  sta px
+@nr: ldx #2
+@loop: lda ry,x
+  clc
+  adc spd,x
+  sta ry,x
+  cmp #232
+  bcc @chk
+  lda #0             ; la roccia è caduta: punto e nuova roccia
+  sta ry,x
+  jsr rand
+  and #$F8
+  sta rx,x
+  jsr addscore
+  jmp @next
+@chk: lda rx,x
+  sec
+  sbc px
+  clc
+  adc #7
+  cmp #15
+  bcs @next
+  lda ry,x
+  sec
+  sbc #208
+  clc
+  adc #7
+  cmp #15
+  bcs @next
+  lda #1             ; colpito: game over
+  sta state
+@next: dex
+  bpl @loop
+  jmp @draw
+@over: lda pad
+  and #$10
+  beq @draw
+  jsr newgame
+@draw: lda #208
+  sta OAM
+  lda state
+  sta OAM+2          ; palette 1 (rossa) a game over
+  lda px
+  sta OAM+3
+  ldx #2
+@rk: txa
+  asl a
+  asl a
+  tay
+  lda ry,x
+  sta OAM+4,y
+  lda rx,x
+  sta OAM+7,y
+  dex
+  bpl @rk
+  lda st
+  clc
+  adc #16
+  sta OAM+17
+  lda su
+  clc
+  adc #16
+  sta OAM+21
+`+END+`
+spd: .byte 2,3,2
+starty: .byte 0,70,140
+sprinit:
+  .byte 208,1,0,120
+  .byte 0,2,0,0, 0,2,0,0, 0,2,0,0
+  .byte 16,16,0,112, 16,16,0,120
+palette:
+.rept 4
+  .byte $0F,$1A,$0A,$30
+.endrept
+  .byte $0F,$30,$2A,$17, $0F,$30,$16,$06, $0F,$30,$2A,$17, $0F,$30,$2A,$17
+.chr 1
+`+R('...22...',2)+R('..2222..',2)+R('.222222.',2)+R('22222222')+R('22....22')+R('..3333..')+R('.333333.')+R('33133333')+R('33333333',3)+R('.333333.')+R('..3333..')+R('11111111',2)+R('22222222',6)+VEC,'nes.inc':INC,'font.asm':FONT})}
+/* ───── livelli: più schermate e scorrimento orizzontale ───── */
+let LV=[nmt],cs=0,lvv=0;
+const goS=i=>{cs=i;nmt=LV[cs];drawNt()};
+$('#n_pv').onclick=()=>goS(Math.max(0,cs-1));$('#n_nx').onclick=()=>goS(Math.min(LV.length-1,cs+1));
+$('#n_add').onclick=()=>{if(LV.length<4){LV.push(new Uint8Array(1024));ntd=1;goS(LV.length-1)}};
+$('#n_ori').onclick=()=>{lvv^=1;ntd=1;drawNt()};
+$('#n_del').onclick=()=>{if(LV.length>1){LV.splice(cs,1);ntd=1;goS(Math.min(cs,LV.length-1))}};
+function lvBlockV(h){const R=LV.length*30,w8=(f)=>{let o='';for(let r=0;r<R;r+=8)o+='  .word '+Array.from({length:Math.min(8,R-r)},(_,k)=>f(r+k)).join(', ')+'\n';return o};
+ let o='\n; <LV> dati del livello verticale (righe di 32 tile e attributi)\nLEVEL_V=1\nLEVEL_H='+R+'\nLEVEL_MAXCAM='+(R*8-240)+'\nlevel_rowptr:\n'+w8(q=>'level_rows+'+q*32)+'level_vaptr:\n'+w8(q=>'level_vattr+'+((q/30|0)*64+((q%30)>>2)*8));
+ o+='level_rows:\n';for(let r=0;r<R;r++)o+='  .byte '+h([...LV[r/30|0].slice((r%30)*32,(r%30)*32+32)])+'\n';
+ o+='level_vattr:\n';LV.forEach(S=>{for(let g=0;g<8;g++)o+='  .byte '+h([...S.slice(960+g*8,968+g*8)])+'\n'});
+ return o+'; </LV>\n'}
+function lvBlock(h){if(LV.length<2)return'';if(lvv)return lvBlockV(h);const W=LV.length*32;
+ let o='\n; <LV> dati del livello per lo scorrimento (colonne di 30 tile e attributi)\nLEVEL_W='+W+'\nLEVEL_MAXCAM='+(W*8-256)+'\nlevel_colptr:\n';
+ for(let c=0;c<W;c+=8)o+='  .word '+[0,1,2,3,4,5,6,7].map(k=>'level_cols+'+(c+k)*30).join(', ')+'\n';
+ o+='level_cols:\n';for(let c=0;c<W;c++){const S=LV[c>>5],col=[];for(let r=0;r<30;r++)col.push(S[r*32+(c&31)]);o+='  .byte '+h(col)+'\n'}
+ o+='level_attr:\n';for(let g=0;g<W/4;g++){const S=LV[g>>3],a=[];for(let r=0;r<8;r++)a.push(S[960+r*8+(g&7)]);o+='  .byte '+h(a)+'\n'}
+ return o+'; </LV>\n'}
+function mkLevel(){LV=[];for(let n=0;n<4;n++){const a=new Uint8Array(1024);
+  for(let x=0;x<32;x++){const gx=n*32+x;a[26*32+x]=1;for(let r=27;r<30;r++)a[r*32+x]=2;if(gx%20>=7&&gx%20<12)a[20*32+x]=1;if(gx%16<3)a[6*32+x]=3}
+  for(let r=6;r<8;r++)for(let g=0;g<8;g++)a[960+r*8+g]=0x55;LV.push(a)}
+ cs=0;nmt=LV[0];bp[0].splice(0,4,0x21,0x30,0x10,0x00);ntd=1;applyNt()}
+{const R=(t,n=1)=>('.tile '+t+'\n').repeat(n);
+EX.push({'main.asm':`; LIVELLO CON SCORRIMENTO - frecce sinistra/destra. Il livello (4 schermate) è disegnato con l'editor schermate:
+; i suoi dati (colonne e attributi) stanno nel blocco <LV>, che l'editor scrive da solo.
+.mirror v
+.include "nes.inc"
+JOY=$4016
+camlo=$10
+camhi=$11
+oldt=$12
+pad=$13
+ptr=$14
+col=$19
+ah=$1A
+al=$1B
+ctrlv=$1C
+t3=$1D
+
+.org $8000
+reset:
+  sei
+  cld
+  ldx #$FF
+  txs
+  inx
+  stx PPUCTRL
+  stx PPUMASK
+  vblank_wait
+  vblank_wait
+  ppu_addr $3F, $00  ; palette di sfondo (16 byte)
+  ldx #0
+@p: lda screen_pal,x
+  sta PPUDATA
+  inx
+  cpx #16
+  bne @p
+  lda #0
+  sta camlo
+  sta camhi
+  sta oldt
+  sta ctrlv
+  sta t3
+@ld: lda t3            ; disegna le prime 33 colonne
+  jsr put_col
+  inc t3
+  lda t3
+  cmp #33
+  bcc @ld
+  lda #0
+  sta PPUSCROLL
+  sta PPUSCROLL
+  lda #$80
+  sta ctrlv
+  sta PPUCTRL
+  lda #%00001010
+  sta PPUMASK
+forever: jmp forever
+
+; put_col: scrive nella PPU la colonna A del livello (30 tile + attributi)
+put_col:
+  sta col
+  asl a
+  tay
+  lda level_colptr,y
+  sta ptr
+  lda level_colptr+1,y
+  sta ptr+1
+  lda ctrlv
+  ora #4              ; scrittura in colonna
+  sta PPUCTRL
+  lda col
+  and #$20
+  lsr a
+  lsr a
+  lsr a
+  ora #$20
+  sta PPUADDR
+  lda col
+  and #$1F
+  sta PPUADDR
+  ldy #0
+@l: lda (ptr),y
+  sta PPUDATA
+  iny
+  cpy #30
+  bne @l
+  lda col             ; attributi del gruppo di 4 colonne
+  lsr a
+  lsr a
+  asl a
+  asl a
+  asl a
+  tax
+  lda col
+  and #$20
+  lsr a
+  lsr a
+  lsr a
+  ora #$23
+  sta ah
+  lda col
+  and #$1C
+  lsr a
+  lsr a
+  clc
+  adc #$C0
+  sta al
+  ldy #8
+@a: lda ah
+  sta PPUADDR
+  lda al
+  sta PPUADDR
+  lda level_attr,x
+  sta PPUDATA
+  inx
+  lda al
+  clc
+  adc #8
+  sta al
+  dey
+  bne @a
+  rts
+
+nmi:
+  pha
+  txa
+  pha
+  tya
+  pha
+  lda #1
+  sta JOY
+  lda #0
+  sta JOY
+  ldx #8
+@r: lda JOY
+  lsr a
+  rol pad
+  dex
+  bne @r
+  lda pad
+  and #$01             ; destra
+  beq @nr
+  lda camhi
+  cmp #>LEVEL_MAXCAM
+  bcc @mr
+  bne @nr
+  lda camlo
+  cmp #<LEVEL_MAXCAM
+  bcs @nr
+@mr: clc
+  lda camlo
+  adc #2
+  sta camlo
+  bcc @nr
+  inc camhi
+@nr: lda pad
+  and #$02             ; sinistra
+  beq @nl
+  lda camlo
+  ora camhi
+  beq @nl
+  sec
+  lda camlo
+  sbc #2
+  sta camlo
+  bcs @nl
+  dec camhi
+@nl: lda camhi         ; colonna di tile a sinistra = camera / 8
+  asl a
+  asl a
+  asl a
+  asl a
+  asl a
+  sta t3
+  lda camlo
+  lsr a
+  lsr a
+  lsr a
+  ora t3
+  cmp oldt
+  beq @sc
+  bcc @left
+  sta oldt             ; scorso a destra: serve la colonna +32
+  clc
+  adc #32
+  cmp #LEVEL_W
+  bcs @sc
+  jsr put_col
+  jmp @sc
+@left: sta oldt        ; scorso a sinistra: serve la nuova colonna sinistra
+  jsr put_col
+@sc: lda camlo
+  sta PPUSCROLL
+  lda #0
+  sta PPUSCROLL
+  lda camhi
+  and #1
+  ora ctrlv
+  sta PPUCTRL
+  pla
+  tay
+  pla
+  tax
+  pla
+  rti
+
+.chr 1
+`+R('22222222')+R('11111111',7)+R('11211111',8)+R('..1111..')+R('.111111.')+R('11111111',3)+R('.111111.')+R('........',2)+`
+.org $FFFA
+.word nmi, reset, 0
+`,'nes.inc':EX[3]['nes.inc']})}
+
+function mkSong(){const N=32;MR=[0,1,2,3].map(()=>Array.from({length:N},()=>({n:0,v:15,d:2})));
+ for(let r=0;r<N;r++){if(r%2==0)Object.assign(MR[0][r],{n:[37,41,44,49,44,41,37,41][(r>>1)&7],v:12,d:2});
+  if(r%8==0)Object.assign(MR[1][r],{n:r%16?20:25,v:9,d:1});if(r%4==0)Object.assign(MR[2][r],{n:r%16<8?25:20});
+  if(r%2==0)Object.assign(MR[3][r],{n:r%8==4?8:3,v:r%8==4?10:5})}
+ mrw=0;$('#mu_n').value=32;$('#mu_sp').value=7;mud=1;applyMu()}
+EX.push({'main.asm':`; MUSICA - esempio del tracker. Il brano sta nel blocco <MU>, scritto dall'editor musicale (pannello «Musica»).
+; Premi RUN per sentirlo; cambia le note nel tracker e premi di nuovo RUN.
+.mirror v
+.include "nes.inc"
+.org $8000
+reset:
+  sei
+  cld
+  ldx #$FF
+  txs
+  inx
+  stx PPUCTRL
+  stx PPUMASK
+  vblank_wait
+  vblank_wait
+  jsr music_init
+  lda #%10000000
+  sta PPUCTRL
+forever: jmp forever
+nmi:
+  pha
+  txa
+  pha
+  tya
+  pha
+  jsr music_update
+  pla
+  tay
+  pla
+  tax
+  pla
+  rti
+
+`+MUSDRV+`
+.org $FFFA
+.word nmi, reset, 0
+`,'nes.inc':EX[3]['nes.inc']});
+
+function mkLevelV(){LV=[];for(let n=0;n<4;n++){const a=new Uint8Array(1024);
+  for(let r=0;r<30;r++){a[r*32]=a[r*32+1]=a[r*32+30]=a[r*32+31]=1;if(r%5==2){const x0=5+((n*7+r)%4)*5;for(let x=x0;x<x0+7;x++)a[r*32+x]=2}}
+  a.fill((n&3)*0x55,960);LV.push(a)}
+ lvv=1;cs=0;nmt=LV[0];ntd=1;applyNt()}
+{const R=(t,n=1)=>('.tile '+t+'\n').repeat(n);
+EX.push({'main.asm':`; LIVELLO VERTICALE - frecce su/giù. Quattro schermate impilate (disegnate con l'editor schermate, direzione «verticale»):
+; le righe entrano nella PPU mentre la telecamera si muove. Il blocco <LV> lo scrive l'editor.
+.mirror h
+.include "nes.inc"
+JOY=$4016
+camlo=$10
+camhi=$11
+oldt=$12
+pad=$13
+ptr=$14
+aptr=$16
+row=$18
+rr=$19
+ah=$1A
+ctrlv=$1B
+t3=$1C
+scy=$1D
+nty=$1E
+
+.org $8000
+reset:
+  sei
+  cld
+  ldx #$FF
+  txs
+  inx
+  stx PPUCTRL
+  stx PPUMASK
+  vblank_wait
+  vblank_wait
+  ppu_addr $3F, $00
+  ldx #0
+@p: lda screen_pal,x
+  sta PPUDATA
+  inx
+  cpx #16
+  bne @p
+  lda #0
+  sta camlo
+  sta camhi
+  sta oldt
+  sta ctrlv
+  sta scy
+  sta nty
+  sta t3
+@ld: lda t3            ; disegna le prime 31 righe
+  jsr put_row
+  inc t3
+  lda t3
+  cmp #31
+  bcc @ld
+  lda #0
+  sta PPUSCROLL
+  sta PPUSCROLL
+  lda #$80
+  sta ctrlv
+  sta PPUCTRL
+  lda #%00001010
+  sta PPUMASK
+forever: jmp forever
+
+; put_row: scrive nella PPU la riga A del livello (32 tile + 8 attributi)
+put_row:
+  sta row
+  asl a
+  tay
+  lda level_rowptr,y
+  sta ptr
+  lda level_rowptr+1,y
+  sta ptr+1
+  lda level_vaptr,y
+  sta aptr
+  lda level_vaptr+1,y
+  sta aptr+1
+  lda ctrlv
+  sta PPUCTRL          ; scrittura in orizzontale (+1)
+  lda row              ; riga % 60: i due nametable verticali hanno 30 righe ciascuno
+  sec
+@m: sbc #60
+  bcs @m
+  adc #60
+  ldx #$20
+  cmp #30
+  bcc @a
+  sbc #30
+  ldx #$28
+@a: sta rr
+  stx ah
+  lda rr
+  lsr a
+  lsr a
+  lsr a
+  clc
+  adc ah
+  sta PPUADDR
+  lda rr
+  and #7
+  asl a
+  asl a
+  asl a
+  asl a
+  asl a
+  sta PPUADDR
+  ldy #0
+@l: lda (ptr),y
+  sta PPUDATA
+  iny
+  cpy #32
+  bne @l
+  lda ah               ; attributi della riga: $23C0/$2BC0 + (rr/4)*8
+  clc
+  adc #3
+  sta PPUADDR
+  lda rr
+  lsr a
+  lsr a
+  asl a
+  asl a
+  asl a
+  clc
+  adc #$C0
+  sta PPUADDR
+  ldy #0
+@t: lda (aptr),y
+  sta PPUDATA
+  iny
+  cpy #8
+  bne @t
+  rts
+
+nmi:
+  pha
+  txa
+  pha
+  tya
+  pha
+  lda #1
+  sta JOY
+  lda #0
+  sta JOY
+  ldx #8
+@r: lda JOY
+  lsr a
+  rol pad
+  dex
+  bne @r
+  lda pad
+  and #$04             ; giù
+  beq @nd
+  lda camhi
+  cmp #>LEVEL_MAXCAM
+  bcc @md
+  bne @nd
+  lda camlo
+  cmp #<LEVEL_MAXCAM
+  bcs @nd
+@md: clc
+  lda camlo
+  adc #2
+  sta camlo
+  bcc @sy
+  inc camhi
+@sy: lda scy
+  clc
+  adc #2
+  cmp #240
+  bcc @ok
+  lda nty
+  eor #1
+  sta nty
+  lda #0
+@ok: sta scy
+@nd: lda pad
+  and #$08             ; su
+  beq @nu
+  lda camlo
+  ora camhi
+  beq @nu
+  sec
+  lda camlo
+  sbc #2
+  sta camlo
+  bcs @s2
+  dec camhi
+@s2: lda scy
+  bne @dc
+  lda nty
+  eor #1
+  sta nty
+  lda #238
+  jmp @sv
+@dc: sec
+  sbc #2
+@sv: sta scy
+@nu: lda camhi         ; riga di tile in alto = camera / 8
+  asl a
+  asl a
+  asl a
+  asl a
+  asl a
+  sta t3
+  lda camlo
+  lsr a
+  lsr a
+  lsr a
+  ora t3
+  cmp oldt
+  beq @sc
+  bcc @up
+  sta oldt             ; scorso in basso: serve la riga +30
+  clc
+  adc #30
+  cmp #LEVEL_H
+  bcs @sc
+  jsr put_row
+  jmp @sc
+@up: sta oldt          ; scorso in alto: serve la nuova riga in alto
+  jsr put_row
+@sc: lda #0
+  sta PPUSCROLL
+  lda scy
+  sta PPUSCROLL
+  lda nty
+  asl a
+  ora ctrlv
+  sta PPUCTRL
+  pla
+  tay
+  pla
+  tax
+  pla
+  rti
+
+.chr 1
+`+R('11111112',3)+R('22222222')+R('11121111',3)+R('22222222')+R('11111111')+R('22222222')+R('........',6)+`
+.org $FFFA
+.word nmi, reset, 0
+`,'nes.inc':EX[3]['nes.inc']})}
+$('#ex').onchange=e=>{if(e.target.value!==''){{const x=EX[+e.target.value];setProj(typeof x=='string'?{'main.asm':x}:x)}dirty=0;nmt=new Uint8Array(1024);LV=[nmt];cs=0;mud=0;lvv=0;if(e.target.value=='2'){nmt.fill(0);for(let i=320;i<448;i++)nmt[i]=1+(i&1);applyNt()}else if(e.target.value=='6')mkLevel();else if(e.target.value=='7')mkSong();else if(e.target.value=='8')mkLevelV();relo()}e.target.value=''};
+try{const j=JSON.parse(localStorage.getItem('nes_ide_proj'));if(j&&j.FILES&&j.FILES[j.MAIN])setProj(j.FILES,j.CUR,j.MAIN);else setProj({'main.asm':EX[0]})}catch(e){setProj({'main.asm':EX[0]})}
+upd();relo();drawMu();requestAnimationFrame(tick);
+</script>
