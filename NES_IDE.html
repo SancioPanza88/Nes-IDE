@@ -459,7 +459,7 @@ const unb64=t=>Uint8Array.from(atob(t),c=>c.charCodeAt(0));
 const b64u=u=>b64(u).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
 const unb64u=t=>unb64(t.replace(/-/g,'+').replace(/_/g,'/')+'='.repeat((4-t.length%4)%4));
 const flush=()=>{if(dirty)applyGfx();if(ntd)applyNt();if(msd)applyMs();if(mud)applyMu()};
-function mkPlayerHtml(src,b){return src.replace('<script>',()=>'<script>window.__ROM__="'+b+'";</script>\n<script>')}
+function mkPlayerHtml(src,b){return src.replace('<script>',()=>'<script>window.__ROM__="'+b+'";<\/script>\n<script>')}
 $('#exh').onclick=()=>{flush();if(build())dl('gioco.html',mkPlayerHtml('<!DOCTYPE html>'+document.documentElement.outerHTML,b64(ROM)),'text/html')};
 function playerStart(){initAudio();load(unb64(__ROM__));scr.focus()}
 function playerInit(){if(typeof __ROM__=='undefined')return;document.body.classList.add('player');document.title='Gioco NES';const b=document.createElement('button');b.id='play';b.textContent='▶ GIOCA';b.onclick=()=>{b.remove();playerStart()};document.body.appendChild(b)}
