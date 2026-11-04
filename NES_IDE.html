@@ -42,6 +42,9 @@ button:hover{background:#4a4054}:focus-visible{outline:2px solid var(--ac)}
 #tc{display:flex;justify-content:space-between;align-items:center;padding:4px 8px;user-select:none;touch-action:none}.dp{display:grid;grid-template-columns:repeat(3,46px);grid-template-rows:repeat(3,46px);gap:2px}.ab{display:flex;gap:6px}#tc button{min-height:46px;min-width:46px}
 @media(pointer:fine){#tc{display:none}}
 #mt{max-height:240px;overflow:auto;background:var(--dk);outline:0}#mt table{border-collapse:collapse;font-size:12px}#mt td,#mt th{padding:1px 6px;white-space:pre;cursor:pointer;border-right:1px solid #2a2530}#mt th{color:var(--dm);font-weight:400}#mt tr.b td{border-top:1px solid #3a3342}#mt td.s{background:var(--rd);color:#fff}#mu_pos{color:var(--dm);margin-left:6px}
+#ptv{width:100%;max-width:512px;image-rendering:pixelated;display:block;background:#000;margin-top:6px}
+#play{position:fixed;inset:0;margin:auto;width:220px;height:80px;font-size:22px;z-index:9;background:var(--rd);color:#fff;border-radius:8px}
+body.player header,body.player #tb,body.player #L,body.player #R>*:not(#scr):not(#tc){display:none!important}body.player{overflow:hidden}body.player #main{align-items:center;justify-content:center}body.player #R{width:100%;background:none;border:0;align-items:center;overflow:hidden}body.player #scr{max-width:min(100vw,calc(95vh*256/240))}
 #ntv{width:100%;max-width:512px;image-rendering:pixelated;display:block;background:#000;margin-top:6px}
 dialog{background:var(--pn);color:var(--tx);border:2px solid var(--rd);max-width:640px;max-height:80vh;overflow:auto;padding:12px 16px}dialog::backdrop{background:#000a}dialog h3{margin-bottom:6px}dialog p{margin:6px 0;line-height:1.5}dialog code{color:var(--ac)}
 #npb{display:flex;gap:4px;margin:6px 0}
@@ -52,9 +55,9 @@ dialog{background:var(--pn);color:var(--tx);border:2px solid var(--rd);max-width
 <div id="tb">
 <button class="run" id="run" title="Assembla ed esegui (F9 o Ctrl+Invio)">▶ RUN</button>
 <button id="pause">⏸ PAUSA</button><button id="rst">↺ RESET</button><button id="mute">🔊 AUDIO</button><button id="undo" title="Annulla l’ultimo «Applica al codice» o «Sostituisci»">↶ ANNULLA</button><button id="svs" title="Salva lo stato dell’emulatore">💾 STATO</button><button id="lds">⏏ CARICA STATO</button><button id="rwd" title="Tieni premuto per riavvolgere (ultimi 20 secondi)">⏪ RIAVVOLGI</button><button id="shot" title="Salva uno screenshot PNG">📷</button><button id="hlp" title="Guida rapida">? GUIDA</button><button id="rec" title="Registra un video .webm">⏺ REC</button><select id="reg" title="Standard video: NTSC 60 Hz o PAL 50 Hz"><option value="0">NTSC</option><option value="1">PAL</option></select>
-<button id="nes" title="Scarica la ROM per altri emulatori o per una vera NES">↓ .NES</button>
+<button id="nes" title="Scarica la ROM per altri emulatori o per una vera NES">↓ .NES</button><button id="exh" title="Scarica una pagina HTML giocabile con il gioco già dentro">↓ HTML</button><button id="lnk" title="Copia un link al progetto (funziona con questa pagina pubblicata su un sito)">🔗 LINK</button>
 <button id="open">📂 APRI</button><button id="save">💾 SALVA FILE</button><button id="zip" title="Esporta tutto il progetto in un .zip">📦 ZIP</button>
-<select id="ex"><option value="">Esempi…</option><option value="0">Sprite con la croce direzionale</option><option value="1">Modello vuoto</option><option value="2">Schermata (editor schermate)</option><option value="3">Progetto multi-file con macro</option><option value="4">Gioco: Pong (tu contro la CPU)</option><option value="5">Gioco: Meteore (schiva le rocce)</option><option value="6">Livello con scorrimento (4 schermate)</option><option value="7">Musica: brano di prova (tracker)</option><option value="8">Livello verticale (4 schermate)</option></select>
+<select id="ex"><option value="">Esempi…</option><option value="0">Sprite con la croce direzionale</option><option value="1">Modello vuoto</option><option value="2">Schermata (editor schermate)</option><option value="3">Progetto multi-file con macro</option><option value="4">Gioco: Pong (tu contro la CPU)</option><option value="5">Gioco: Meteore (schiva le rocce)</option><option value="6">Livello con scorrimento (4 schermate)</option><option value="7">Musica: brano di prova (tracker)</option><option value="8">Livello verticale (4 schermate)</option><option value="9">NESC: Raccogli le monete (alto livello)</option></select>
 </div>
 <div id="main">
 <div id="L"><div id="tabs"></div><div id="fbar"><input id="fq" placeholder="Cerca" size="14"><input id="fr" placeholder="Sostituisci con" size="14"><button id="f_n">Trova</button><button id="f_a" title="Cerca in tutti i file del progetto">Trova in tutti</button><button id="f_r">Sostituisci tutto</button><select id="sy"><option value="">Vai a simbolo…</option></select></div><div id="ed"><pre id="ln"></pre><div id="w"><pre id="hl"></pre><textarea id="ta" spellcheck="false" wrap="off" aria-label="Codice assembly"></textarea></div></div><div id="con"></div></div>
@@ -87,7 +90,7 @@ dialog{background:var(--pn);color:var(--tx);border:2px solid var(--rd);max-width
 <details id="dbg"><summary>Debugger</summary>
 <div class="bt"><button id="d_s">Passo</button><button id="d_f">Frame</button><button id="d_c">Continua</button>
 <label>Breakpoint $<input id="dbp" size="5" placeholder="8000"></label><label>Memoria $<input id="dm" size="5" value="0000"></label></div>
-<pre id="dv">Premi RUN, poi metti in pausa per vedere registri, istruzioni e memoria.</pre><div id="pw" title="Palette PPU ($3F00-$3F1F)"></div><pre id="ov"></pre><canvas id="ntv" width="512" height="480" title="Nametable PPU (con mirroring); il riquadro rosso è l’area visibile"></canvas></details>
+<pre id="dv">Premi RUN, poi metti in pausa per vedere registri, istruzioni e memoria.</pre><div id="pw" title="Palette PPU ($3F00-$3F1F)"></div><pre id="ov"></pre><canvas id="ptv" width="256" height="128" title="Pattern table 0 e 1 (CHR della PPU)"></canvas><canvas id="ntv" width="512" height="480" title="Nametable PPU (con mirroring); il riquadro rosso è l’area visibile"></canvas></details>
 <details><summary>Sintassi</summary>
 <p>Etichette <code>nome:</code> · costanti <code>NOME=$2000</code> · <code>.org</code> <code>.byte</code> <code>.word</code> <code>.res</code> · <code>#&lt;x</code> <code>#&gt;x</code> byte basso/alto · <code>.mirror v|h</code><br>
 Grafica: <code>.chr N</code> sceglie il tile N (0–255 tabella 0, 256–511 tabella 1), poi 8 righe <code>.tile 01230123</code> (cifre 0–3 o <code>.</code>).<br>
@@ -189,7 +192,7 @@ function assemble(src,map){
   put(b);
  }catch(e){throw Object.assign(Error(e.message),{n:map?map[n][1]:n+1,f:map?map[n][0]:undefined})}})}
  const rom=new Uint8Array(16+prg.length+chr.length);rom.set([78,69,83,26,NB,CB,mir|(MP&15)<<4,MP&240]);rom.set(prg,16);rom.set(chr,16+prg.length);
- const wl=[...warn];for(const k in ldef)if(!uses[k]&&!k.includes('__')&&!/^(reset|nmi|irq|screen|meta_|level_|music_|note_|tri_)/.test(k))wl.push({n:ldef[k],m:'etichetta mai usata: '+k});
+ const wl=[...warn];for(const k in ldef)if(!uses[k]&&!k.includes('__')&&!/^(reset|nmi|irq|screen|meta_|level_|music_|note_|tri_|nc_|_L|v_|a_)/.test(k))wl.push({n:ldef[k],m:'etichetta mai usata: '+k});
  return{rom,sym,used,chr:chr.slice(0,8192),warn:wl.sort((a,b)=>a.n-b.n).map(w=>({n:map?map[w.n][1]:w.n+1,f:map?map[w.n][0]:undefined,m:w.m}))};
 }
 
@@ -450,13 +453,31 @@ function drawNtv(){for(let n=0;n<4;n++){const base=nt(0x2000|n<<10),ox=(n&1)*256
 $('#f_a').onclick=()=>{const q=$('#fq').value.toLowerCase();if(!q)return;FILES[CUR]=ta.value;con.textContent='';let n=0;
  for(const f in FILES)FILES[f].split('\n').forEach((l,i)=>{if(l.toLowerCase().includes(q)&&n<200){n++;log(f+':'+(i+1)+'  '+l.trim(),'',i+1,f)}});log(n+' risultati per «'+$('#fq').value+'» in tutti i file','ok')};
 $('#hlp').onclick=()=>$('#hd').showModal();$('#hc').onclick=()=>$('#hd').close();
+/* ───── esportazione: pagina giocabile, link, pattern table ───── */
+const b64=u=>{let t='';for(let i=0;i<u.length;i+=8192)t+=String.fromCharCode.apply(null,u.subarray(i,i+8192));return btoa(t)};
+const unb64=t=>Uint8Array.from(atob(t),c=>c.charCodeAt(0));
+const b64u=u=>b64(u).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+const unb64u=t=>unb64(t.replace(/-/g,'+').replace(/_/g,'/')+'='.repeat((4-t.length%4)%4));
+const flush=()=>{if(dirty)applyGfx();if(ntd)applyNt();if(msd)applyMs();if(mud)applyMu()};
+function mkPlayerHtml(src,b){return src.replace('<script>',()=>'<script>window.__ROM__="'+b+'";</script>\n<script>')}
+$('#exh').onclick=()=>{flush();if(build())dl('gioco.html',mkPlayerHtml('<!DOCTYPE html>'+document.documentElement.outerHTML,b64(ROM)),'text/html')};
+function playerStart(){initAudio();load(unb64(__ROM__));scr.focus()}
+function playerInit(){if(typeof __ROM__=='undefined')return;document.body.classList.add('player');document.title='Gioco NES';const b=document.createElement('button');b.id='play';b.textContent='▶ GIOCA';b.onclick=()=>{b.remove();playerStart()};document.body.appendChild(b)}
+async function shareLink(){FILES[CUR]=ta.value;const cs=new Blob([JSON.stringify({F:FILES,M:MAIN})]).stream().pipeThrough(new CompressionStream('deflate-raw'));
+ return location.href.split('#')[0]+'#p='+b64u(new Uint8Array(await new Response(cs).arrayBuffer()))}
+async function fromHash(){const m=/#p=([\w-]+)$/.exec(location.hash);if(!m||typeof __ROM__!='undefined')return;
+ try{const o=JSON.parse(await new Response(new Blob([unb64u(m[1])]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).text());setProj(o.F,undefined,o.M);relo()}catch(e){log('✖ Link non valido: '+e.message,'er')}}
+$('#lnk').onclick=async()=>{try{const u=await shareLink();try{await navigator.clipboard.writeText(u);log('✔ Link copiato ('+u.length+' caratteri). Funziona se questa pagina è pubblicata su un sito.','ok')}catch(e){prompt('Copia il link:',u)}}catch(e){log('✖ '+e.message,'er')}};
+const PV=$('#ptv'),PC=PV.getContext('2d'),PI=PC.createImageData(256,128),PQ=new Uint32Array(PI.data.buffer),GR=[0x0F,0x00,0x10,0x30];
+function drawPtv(){if(!chr)return;for(let t=0;t<512;t++){const bx=(t>>8)*128+(t&15)*8,by=(t>>4&15)*8;
+ for(let r=0;r<8;r++){const l=chr[t*16+r],h=chr[t*16+8+r];for(let k=0;k<8;k++)PQ[(by+r)*256+bx+k]=PX[GR[(l>>7-k&1)|(h>>7-k&1)<<1]]}}PC.putImageData(PI,0,0)}
 $('#f_n').onclick=findNext;$('#fq').onkeydown=e=>{if(e.key=='Enter')findNext()};
 $('#f_r').onclick=()=>{const q=$('#fq').value;if(!q)return;const r=$('#fr').value;let n=0;const nv=ta.value.replace(new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'gi'),()=>(n++,r));if(n){usnap();ta.value=nv;upd()}log('✔ Sostituzioni: '+n,'ok')};
 function fillSy(){$('#sy').innerHTML='<option value="">Vai a simbolo…</option>'+Object.entries(SYMS).filter(([k,v])=>v>=0x8000&&!k.includes('__')).sort((a,b)=>a[1]-b[1]).map(([k])=>`<option>${E(k)}</option>`).join('')}
 $('#sy').onchange=e=>{const k=e.target.value;e.target.selectedIndex=0;if(!k)return;const re=new RegExp('^[ \\t]*'+k+':','m');
  for(const f in FILES){const t=f==CUR?ta.value:FILES[f],m=re.exec(t);if(m){if(f!=CUR)openFile(f);ta.focus();ta.setSelectionRange(m.index,m.index);ta.scrollTop=Math.max(0,(t.slice(0,m.index).split('\n').length-4)*20);return}}log('Simbolo definito altrove: '+k)};
 function viewers(){$('#pw').innerHTML=[...pal].map((c,i)=>`<i style="background:${css(PX[c&63])}" title="$${hx(0x3F00+i,4)} = $${hx(c,2)}"></i>`).join('');
- let o='OAM (y tile attr x):\n';for(let i=0;i<64;i++){const y=oam[i*4];if(y<240)o+=hx(i,2)+': '+hx(y,2)+' '+hx(oam[i*4+1],2)+' '+hx(oam[i*4+2],2)+' '+hx(oam[i*4+3],2)+'\n'}$('#ov').textContent=o;drawNtv()}
+ let o='OAM (y tile attr x):\n';for(let i=0;i<64;i++){const y=oam[i*4];if(y<240)o+=hx(i,2)+': '+hx(y,2)+' '+hx(oam[i*4+1],2)+' '+hx(oam[i*4+2],2)+' '+hx(oam[i*4+3],2)+'\n'}$('#ov').textContent=o;drawNtv();drawPtv()}
 function snap_(){return{r:[A,X,Y,sp,pc,fc,fz,fi,fd,fv,fn,cyc,ctrl,mask,vb,hit,w,va,tv,buf,oa,scx,scy,sh,pb,mr,mir,en,lin,lr],mg:mg.slice(),ram:ram.slice(),vram:vram.slice(),oam:oam.slice(),pal:pal.slice(),chr:chr.slice(),ar:ar.slice(),lc:lc.slice()}}
 function rest_(o){[A,X,Y,sp,pc,fc,fz,fi,fd,fv,fn,cyc,ctrl,mask,vb,hit,w,va,tv,buf,oa,scx,scy,sh,pb,mr,mir,en,lin,lr]=o.r;mg=o.mg.slice();ram.set(o.ram);vram.set(o.vram);oam.set(o.oam);pal.set(o.pal);chr.set(o.chr);ar.set(o.ar);lc.splice(0,4,...o.lc)}
 $('#svs').onclick=()=>{if(prg){SS=snap_();log('💾 Stato salvato','ok')}};
@@ -675,7 +696,7 @@ function dl(name,data,type){const a=document.createElement('a');a.href=URL.creat
 $('#run').onclick=go;
 $('#pause').onclick=()=>{if(prg)setRun(!run)};
 $('#rst').onclick=()=>{if(ROM)load(ROM)};
-$('#nes').onclick=()=>{if(build())dl('gioco.nes',ROM,'application/octet-stream')};
+$('#nes').onclick=()=>{flush();if(build())dl('gioco.nes',ROM,'application/octet-stream')};
 $('#save').onclick=()=>dl(CUR,ta.value,'text/plain');
 $('#zip').onclick=()=>{FILES[CUR]=ta.value;dl('progetto.zip',zip(FILES),'application/zip')};
 $('#open').onclick=()=>$('#fi').click();
@@ -914,10 +935,10 @@ $('#tabs').onclick=e=>{const b=e.target.closest('button');if(!b)return;const a=b
  else if(CUR!=MAIN&&confirm('Eliminare '+CUR+'?')){const d=CUR;CUR=MAIN;delete FILES[d];ta.value=FILES[MAIN];upd();tabs()}};
 function prep(main){const out=[],map=[],mac={};let uid=0;
  const sp=s=>{let d=0,c='';const r=[];for(const ch of s){if(ch=='(')d++;if(ch==')')d--;if(ch==','&&!d){r.push(c);c=''}else c+=ch}if(c.trim()||r.length)r.push(c);return r.map(x=>x.trim())};
- const er=(f,n,m)=>Object.assign(Error(m),{f,n});
+ const er=(f,n,m)=>Object.assign(Error(m),{f,n}),SRC=f=>{if(!/\.nc$/i.test(f))return FILES[f].split('\n').map((x,k)=>[x,f,k+1]);try{return ncCompile(FILES[f]).map(([t,n])=>[t,f,n])}catch(e){throw er(f,e.n||1,e.message)}};
  function run(L,d){if(d>30)throw er(L[0][1],L[0][2],'macro o include annidati troppo a fondo');
   for(let i=0;i<L.length;i++){const[l,f,n]=L[i],t=l.replace(/;.*/,'').trim();let m;
-   if(m=/^\.include\s+"([^"]+)"/i.exec(t)){if(!(m[1] in FILES))throw er(f,n,'file non trovato: '+m[1]);run(FILES[m[1]].split('\n').map((x,k)=>[x,m[1],k+1]),d+1);continue}
+   if(m=/^\.include\s+"([^"]+)"/i.exec(t)){if(!(m[1] in FILES))throw er(f,n,'file non trovato: '+m[1]);run(SRC(m[1]),d+1);continue}
    if(m=/^\.(macro|rept)\b\s*(.*)/i.exec(t)){const k=m[1].toLowerCase(),b=[];let j=i+1;for(;j<L.length&&!/^\s*\.end(macro|m|rept)\b/i.test(L[j][0]);j++)b.push(L[j]);if(j>=L.length)throw er(f,n,'manca .end'+k);i=j;
     if(k=='rept'){for(let r=+m[2]|0;r>0;r--)run(b,d+1)}else{const q=/^(\w+)\s*(.*)/.exec(m[2]);if(!q)throw er(f,n,'.macro senza nome');mac[q[1].toLowerCase()]={p:sp(q[2]).filter(Boolean),b}}continue}
    const lab=/^(?:[A-Za-z_]\w*:\s*)*/.exec(t)[0],w=/^(\w+)\s*(.*)$/.exec(t.slice(lab.length)),M=w&&mac[w[1].toLowerCase()];
@@ -925,7 +946,7 @@ function prep(main){const out=[],map=[],mac={};let uid=0;
     run(M.b.map(([x,bf,bn])=>{let y=x;M.p.forEach((p,k)=>{y=y.replace(new RegExp('\\b'+p+'\\b','g'),()=>a[k]??'')});return[y.replace(/@(\w+)/g,'__m'+id+'_$1'),bf,bn]}),d+1);continue}
    out.push(l);map.push([f,n])}}
  if(!(main in FILES))throw Error('file principale mancante: '+main);
- run(FILES[main].split('\n').map((x,k)=>[x,main,k+1]),0);
+ run(SRC(main),0);
  let sc='';const text=out.map(l=>{const g=/^\s*([A-Za-z_]\w*):/.exec(l);if(g&&!g[1].startsWith('__'))sc=g[1];return l.replace(/@(\w+)/g,(_,x)=>sc+'__'+x)});
  return{text:text.join('\n'),map}}
 const asm=()=>{FILES[CUR]=ta.value;const r=prep(MAIN);return assemble(r.text,r.map)};
@@ -1012,7 +1033,7 @@ palette:
 /* ───── giochi di esempio: Pong e Meteore (progetti con più file) ───── */
 {const R=(t,n=1)=>('.tile '+t+'\n').repeat(n);
 const FONT='; font.asm - cifre 0-9 nei tile 16-25 (colore 1)\n.chr 16\n'+['6999996','2622227','691248F','6916196','1359F11','F8E1196','68E9996','F112444','6996996','6997196'].map(d=>[...d].map(h=>{const n=parseInt(h,16);return R([8,4,2,1].map(b=>n&b?'1':'.').join('')+'....')}).join('')+R('........')).join('');
-const INC=EX[3]['nes.inc'],HEAD=`.mirror v
+const INC=(globalThis.NCFONT=FONT,EX[3]['nes.inc']),HEAD=`.mirror v
 .include "nes.inc"
 .include "font.asm"
 OAMADDR=$2003
@@ -1949,7 +1970,135 @@ nmi:
 .org $FFFA
 .word nmi, reset, 0
 `,'nes.inc':EX[3]['nes.inc']})}
+/* ───── NESC: linguaggio ad alto livello che compila in assembly 6502 ───── */
+function ncCompile(src){
+ const er=(l,m)=>Object.assign(Error(m),{n:l}),raw=[],body=[];let depth=0,ina=0;
+ src.split('\n').forEach(l=>{const t=l.trim();
+  if(ina){if(t=='}')ina=0;else raw.push(l);body.push('');return}
+  if(/^asm\s*\{$/.test(t)){ina=1;body.push('');return}
+  if(!depth&&t&&/^(\.|;|[A-Za-z_]\w*:)/.test(t)){raw.push(l);body.push('');return}
+  for(const ch of l.replace(/\/\/.*/,''))if(ch=='{')depth++;else if(ch=='}')depth--;body.push(l)});
+ const tk=[],s=body.join('\n'),re=/(\s+)|(\/\/[^\n]*)|(0x[0-9a-fA-F]+|\$[0-9a-fA-F]+|%[01]+|\d+)|([A-Za-z_]\w*)|(<<|>>|==|!=|<=|>=|\+=|-=|&&|[-+&|^<>=(){}\[\];,])/y,nm=v=>v[0]=='$'?parseInt(v.slice(1),16):v[0]=='%'?parseInt(v.slice(1),2):+v;
+ let line=1,m;re.lastIndex=0;
+ while(re.lastIndex<s.length){const i=re.lastIndex;m=re.exec(s);if(!m)throw er(line,'carattere non valido «'+s[i]+'»');if(m[1])line+=(m[1].match(/\n/g)||[]).length;else if(!m[2])tk.push({k:m[3]?'n':m[4]?'i':'p',v:m[3]?nm(m[3]):m[4]||m[5],l:line})}
+ let p=0;const pk=()=>tk[p]||{k:'e',v:'EOF',l:line},eat=v=>{const t=tk[p];if(t&&t.v===v){p++;return}throw er(t?t.l:line,'attesa «'+v+'»'+(t?' ma trovato «'+t.v+'»':''))};
+ const LVL=[['|'],['^'],['&'],['<<','>>'],['+','-']];
+ const args=()=>{const a=[];if(pk().v==')'){p++;return a}do{a.push(E())}while(pk().v==','&&++p);eat(')');return a};
+ function E(l=0){if(l==LVL.length)return P();let a=E(l+1);while(pk().k=='p'&&LVL[l].includes(pk().v)){const o=tk[p++].v;a=['b',o,a,E(l+1)]}return a}
+ function P(){const t=tk[p++];if(!t)throw er(line,'espressione incompleta');if(t.k=='n')return['n',t.v];if(t.v=='('){const e=E();eat(')');return e}
+  if(t.k=='i'){if(pk().v=='('){p++;return['c',t.v,args(),t.l]}if(pk().v=='['){p++;const i=E();eat(']');return['a',t.v,i,t.l]}return['v',t.v,t.l]}throw er(t.l,'espressione non valida vicino a «'+t.v+'»')}
+ const cmp=()=>{const l=E(),o=pk().v;if(pk().k=='p'&&['==','!=','<','>','<=','>='].includes(o)){p++;return['cmp',o,l,E()]}return['nz',l]};
+ const C=()=>{let a=cmp();while(pk().v=='&&'){p++;a=['and',a,cmp()]}return a};
+ function B(){eat('{');const r=[];while(pk().v!='}'){if(!tk[p])throw er(line,'manca «}»');r.push(S())}p++;return r}
+ function S(){const t=tk[p];if(!t)throw er(line,'blocco non chiuso');
+  if(t.v=='if'){p++;eat('(');const c=C();eat(')');const a=B();let b=null;if(pk().v=='else'){p++;b=pk().v=='if'?[S()]:B()}return['if',c,a,b,t.l]}
+  if(t.v=='while'){p++;eat('(');const c=C();eat(')');return['while',c,B(),t.l]}
+  if(t.v=='return'){p++;eat(';');return['ret',t.l]}
+  p++;if(pk().v=='('){p++;const a=args();eat(';');return['call',t.v,a,t.l]}
+  let ix=null;if(pk().v=='['){p++;ix=E();eat(']')}const o=tk[p++];if(!o||!['=','+=','-='].includes(o.v))throw er(t.l,'istruzione non valida: «'+t.v+'»');const e=E();eat(';');return['set',t.v,ix,o.v,e,t.l]}
+ const V={},A={},F={},K={BTN_A:128,BTN_B:64,BTN_SELECT:32,BTN_START:16,BTN_UP:8,BTN_DOWN:4,BTN_LEFT:2,BTN_RIGHT:1};let vz=0x20,va=0x300;
+ while(p<tk.length){const t=tk[p++];
+  if(t.v=='var'){do{const n=tk[p++];if(!n||n.k!='i')throw er(t.l,'nome di variabile mancante');if(pk().v=='['){p++;const z=tk[p++].v;eat(']');A[n.v]=va;va+=z}else{V[n.v]=vz++;if(vz>0xF0)throw er(t.l,'troppe variabili (max 208)')}}while(pk().v==','&&++p);eat(';')}
+  else if(t.v=='const'){const n=tk[p++].v;eat('=');K[n]=tk[p++].v;eat(';')}
+  else if(t.v=='func'){const n=tk[p++].v;eat('(');eat(')');F[n]=B()}
+  else throw er(t.l,'«'+t.v+'» non è valido qui (usa var, const, func)')}
+ const o=[];let lb=0,cl=1,rnd=0;const L=()=>'_L'+(++lb),em=(...x)=>x.forEach(t=>o.push([t,cl]));
+ const simple=r=>r[0]=='n'||(r[0]=='v'&&(r[1] in V)),opnd=r=>r[0]=='n'?'#'+(r[1]&255):'v_'+r[1];
+ function ex(e){const k=e[0];
+  if(k=='n')return em(' lda #'+(e[1]&255));
+  if(k=='v'){const n=e[1];if(n in K)return em(' lda #'+(K[n]&255));if(n=='pad')return em(' lda nc_pad');if(n in V)return em(' lda v_'+n);throw er(e[2],'variabile sconosciuta: '+n)}
+  if(k=='a'){if(!(e[1] in A))throw er(e[3],'array sconosciuto: '+e[1]);ex(e[2]);return em(' tax',' lda a_'+e[1]+',x')}
+  if(k=='c'){if(e[1]=='rand'){rnd=1;return em(' jsr nc_rand')}if(e[1]=='peek'&&e[2][0]&&e[2][0][0]=='n')return em(' lda '+e[2][0][1]);throw er(e[3],'funzione non usabile in un’espressione: '+e[1])}
+  const[,op,l,r]=e;
+  if(op=='<<'||op=='>>'){if(r[0]!='n')throw er(cl,'lo scorrimento vuole una costante');ex(l);for(let i=0;i<r[1];i++)em(op=='<<'?' asl a':' lsr a');return}
+  const ins={'+':['clc','adc'],'-':['sec','sbc'],'&':['and'],'|':['ora'],'^':['eor']}[op];ex(l);
+  if(simple(r))ins.forEach((x,i)=>em(' '+x+(i==ins.length-1?' '+opnd(r):'')));else{em(' pha');ex(r);em(' sta nc_t',' pla');ins.forEach((x,i)=>em(' '+x+(i==ins.length-1?' nc_t':'')))}}
+ function cnd(c,Fl){
+  if(c[0]=='and'){cnd(c[1],Fl);cnd(c[2],Fl);return}
+  const t=L();
+  if(c[0]=='nz'){ex(c[1]);em(' cmp #0',' bne '+t,' jmp '+Fl,t+':');return}
+  const[,op,l,r]=c;ex(l);if(simple(r))em(' cmp '+opnd(r));else{em(' pha');ex(r);em(' sta nc_t',' pla',' cmp nc_t')}
+  if(op=='>'){const f=L();em(' beq '+f,' bcs '+t,f+':',' jmp '+Fl,t+':');return}
+  if(op=='<='){em(' bcc '+t,' beq '+t,' jmp '+Fl,t+':');return}
+  em(' '+{'==':'beq','!=':'bne','<':'bcc','>=':'bcs'}[op]+' '+t,' jmp '+Fl,t+':')}
+ const blk=b=>b.forEach(st);
+ function st(s){const k=s[0];if(s[s.length-1]>0)cl=s[s.length-1];
+  if(k=='if'){const e=L(),end=L();cnd(s[1],e);blk(s[2]);if(s[3]){em(' jmp '+end,e+':');blk(s[3]);em(end+':')}else em(e+':')}
+  else if(k=='while'){const a=L(),e=L();em(a+':');cnd(s[1],e);blk(s[2]);em(' jmp '+a,e+':')}
+  else if(k=='ret')em(' rts');
+  else if(k=='call')call(s);
+  else{const[,n,ix,op,e,l]=s;let ee=e;if(op!='=')ee=['b',op[0],ix?['a',n,ix,l]:['v',n,l],e];
+   if(ix){if(!(n in A))throw er(l,'array sconosciuto: '+n);ex(ee);em(' pha');ex(ix);em(' tax',' pla',' sta a_'+n+',x')}
+   else{if(!(n in V))throw er(l,'variabile sconosciuta: '+n);ex(ee);em(' sta v_'+n)}}}
+ function call(s){const[,n,a,l]=s,cst=(x,w)=>{if(!x||x[0]!='n')throw er(l,n+': '+w+' deve essere una costante');return x[1]};
+  if(n in F){if(a.length)throw er(l,'le funzioni non hanno parametri');return em(' jsr nc_'+n)}
+  if(n=='spr'){const b=cst(a[0],'il numero dello sprite')*4;if(a.length<4)throw er(l,'spr(n, x, y, tile [, attr])');ex(a[2]);em(' sta nc_oam+'+b);ex(a[3]);em(' sta nc_oam+'+(b+1));if(a[4])ex(a[4]);else em(' lda #0');em(' sta nc_oam+'+(b+2));ex(a[1]);return em(' sta nc_oam+'+(b+3))}
+  if(n=='poke'){const ad=cst(a[0],'l’indirizzo');ex(a[1]);return em(' sta '+ad)}
+  if(n=='ppu_addr')return em(' lda #'+cst(a[0],'hi'),' sta PPUADDR',' lda #'+cst(a[1],'lo'),' sta PPUADDR');
+  if(n=='ppu_write'){ex(a[0]);return em(' sta PPUDATA')}
+  if(n=='scroll'){ex(a[0]);em(' sta nc_sx');ex(a[1]);return em(' sta nc_sy')}
+  if(n=='wait_vblank'){const x=L();return em(x+':',' bit PPUSTATUS',' bpl '+x)}
+  if(n=='load_palette'){const x=L();if(!a[0]||a[0][0]!='v')throw er(l,'load_palette(etichetta)');return em(' lda #$3F',' sta PPUADDR',' lda #0',' sta PPUADDR',' ldx #0',x+':',' lda '+a[0][1]+',x',' sta PPUDATA',' inx',' cpx #32',' bne '+x)}
+  throw er(l,'funzione sconosciuta: '+n)}
+ for(const n in F){cl=1;em('nc_'+n+':');blk(F[n]);em(' rts')}
+ const fun=o.splice(0),pre=['; --- generato dal compilatore NESC ---','PPUCTRL=$2000','PPUMASK=$2001','PPUSTATUS=$2002','OAMADDR=$2003','PPUSCROLL=$2005','PPUADDR=$2006','PPUDATA=$2007','OAMDMA=$4014','JOY=$4016','nc_oam=$0200','nc_pad=$00','nc_t=$01','nc_sx=$02','nc_sy=$03','nc_rnd=$04',
+  ...Object.entries(V).map(([n,a])=>'v_'+n+'=$'+a.toString(16)),...Object.entries(A).map(([n,a])=>'a_'+n+'=$'+a.toString(16)),'.org $8000','reset:',' sei',' cld',' ldx #$FF',' txs',' inx',' stx PPUCTRL',' stx PPUMASK','nc_v1: bit PPUSTATUS',' bpl nc_v1',' lda #$FF','nc_h: sta nc_oam,x',' inx',' bne nc_h','nc_v2: bit PPUSTATUS',' bpl nc_v2',' lda #$A5',' sta nc_rnd',...('init' in F?[' jsr nc_init']:[]),' lda #0',' sta PPUSCROLL',' sta PPUSCROLL',' lda #%10000000',' sta PPUCTRL',' lda #%00011110',' sta PPUMASK','nc_fv: jmp nc_fv',
+  'nmi:',' pha',' txa',' pha',' tya',' pha',' lda #0',' sta OAMADDR',' lda #>nc_oam',' sta OAMDMA',' lda #1',' sta JOY',' lda #0',' sta JOY',' ldx #8','nc_rd: lda JOY',' lsr a',' rol nc_pad',' dex',' bne nc_rd',...('frame' in F?[' jsr nc_frame']:[]),' lda nc_sx',' sta PPUSCROLL',' lda nc_sy',' sta PPUSCROLL',' pla',' tay',' pla',' tax',' pla',' rti','irq: rti'],
+  rr=rnd?['nc_rand:',' lda nc_rnd',' asl a',' bcc nc_rn',' eor #$1D','nc_rn: sta nc_rnd',' rts']:[];
+ return[...pre.map(t=>[t,1]),...fun,...rr.map(t=>[t,1]),...raw.map(t=>[t,1]),...['.org $FFFA','.word nmi, reset, irq'].map(t=>[t,1])]}
+{const R=(t,n=1)=>('.tile '+t+'\n').repeat(n);
+EX.push({'main.nc':`// MONETE - raccogli le monete che cadono (frecce sinistra/destra). Scritto in NESC, il linguaggio ad alto livello dell'IDE.
+// Il compilatore genera reset, NMI, lettura del controller e vettori: bastano init() e frame().
+var px, py, cx, cy, tens, units;
+
+func newcoin() {
+  cy = 0;
+  cx = rand() & 240;
+}
+
+func score() {
+  units += 1;
+  if (units >= 10) {
+    units = 0;
+    tens += 1;
+    if (tens >= 10) { tens = 0; }
+  }
+}
+
+func init() {
+  load_palette(palette);
+  px = 120;
+  py = 200;
+  newcoin();
+}
+
+func frame() {
+  if (pad & BTN_LEFT) {
+    if (px > 4) { px -= 2; }
+  }
+  if (pad & BTN_RIGHT) {
+    if (px < 244) { px += 2; }
+  }
+  cy += 2;
+  if (cy >= 224) { newcoin(); }
+  if (cy >= 192 && cx + 8 > px && px + 8 > cx) {
+    score();
+    newcoin();
+  }
+  spr(0, px, py, 1);
+  spr(1, cx, cy, 2);
+  spr(2, 112, 16, 16 + tens);
+  spr(3, 120, 16, 16 + units);
+}
+
+asm {
+palette:
+  .byte $0F,$0F,$0F,$0F, $0F,$0F,$0F,$0F, $0F,$0F,$0F,$0F, $0F,$0F,$0F,$0F
+  .byte $0F,$30,$2A,$27, $0F,$30,$2A,$27, $0F,$30,$2A,$27, $0F,$30,$2A,$27
+}
+.chr 1
+`+R('...22...',2)+R('..2222..',2)+R('.222222.',2)+R('22222222')+R('22....22')+R('..3333..')+R('.333333.')+R('33333333',4)+R('.333333.')+R('..3333..')+NCFONT})}
 $('#ex').onchange=e=>{if(e.target.value!==''){{const x=EX[+e.target.value];setProj(typeof x=='string'?{'main.asm':x}:x)}dirty=0;nmt=new Uint8Array(1024);LV=[nmt];cs=0;mud=0;lvv=0;if(e.target.value=='2'){nmt.fill(0);for(let i=320;i<448;i++)nmt[i]=1+(i&1);applyNt()}else if(e.target.value=='6')mkLevel();else if(e.target.value=='7')mkSong();else if(e.target.value=='8')mkLevelV();relo()}e.target.value=''};
 try{const j=JSON.parse(localStorage.getItem('nes_ide_proj'));if(j&&j.FILES&&j.FILES[j.MAIN])setProj(j.FILES,j.CUR,j.MAIN);else setProj({'main.asm':EX[0]})}catch(e){setProj({'main.asm':EX[0]})}
-upd();relo();drawMu();requestAnimationFrame(tick);
+upd();relo();drawMu();requestAnimationFrame(tick);playerInit();fromHash();
 </script>
