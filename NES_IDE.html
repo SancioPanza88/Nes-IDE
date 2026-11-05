@@ -1978,42 +1978,46 @@ function ncCompile(src){
   if(/^asm\s*\{$/.test(t)){ina=1;body.push('');return}
   if(!depth&&t&&/^(\.|;|[A-Za-z_]\w*:)/.test(t)){raw.push(l);body.push('');return}
   for(const ch of l.replace(/\/\/.*/,''))if(ch=='{')depth++;else if(ch=='}')depth--;body.push(l)});
- const tk=[],s=body.join('\n'),re=/(\s+)|(\/\/[^\n]*)|(0x[0-9a-fA-F]+|\$[0-9a-fA-F]+|%[01]+|\d+)|([A-Za-z_]\w*)|(<<|>>|==|!=|<=|>=|\+=|-=|&&|[-+&|^<>=(){}\[\];,])/y,nm=v=>v[0]=='$'?parseInt(v.slice(1),16):v[0]=='%'?parseInt(v.slice(1),2):+v;
+ const tk=[],s=body.join('\n'),re=/(\s+)|(\/\/[^\n]*)|(0x[0-9a-fA-F]+|\$[0-9a-fA-F]+|%[01]+|\d+)|([A-Za-z_]\w*)|(<<|>>|==|!=|<=|>=|\+=|-=|&&|\|\||[-+*\/%&|^<>=(){}\[\];,])/y,nm=v=>v[0]=='$'?parseInt(v.slice(1),16):v[0]=='%'?parseInt(v.slice(1),2):+v;
  let line=1,m;re.lastIndex=0;
  while(re.lastIndex<s.length){const i=re.lastIndex;m=re.exec(s);if(!m)throw er(line,'carattere non valido «'+s[i]+'»');if(m[1])line+=(m[1].match(/\n/g)||[]).length;else if(!m[2])tk.push({k:m[3]?'n':m[4]?'i':'p',v:m[3]?nm(m[3]):m[4]||m[5],l:line})}
  let p=0;const pk=()=>tk[p]||{k:'e',v:'EOF',l:line},eat=v=>{const t=tk[p];if(t&&t.v===v){p++;return}throw er(t?t.l:line,'attesa «'+v+'»'+(t?' ma trovato «'+t.v+'»':''))};
- const LVL=[['|'],['^'],['&'],['<<','>>'],['+','-']];
+ const LVL=[['|'],['^'],['&'],['<<','>>'],['+','-'],['*','/','%']];
  const args=()=>{const a=[];if(pk().v==')'){p++;return a}do{a.push(E())}while(pk().v==','&&++p);eat(')');return a};
  function E(l=0){if(l==LVL.length)return P();let a=E(l+1);while(pk().k=='p'&&LVL[l].includes(pk().v)){const o=tk[p++].v;a=['b',o,a,E(l+1)]}return a}
  function P(){const t=tk[p++];if(!t)throw er(line,'espressione incompleta');if(t.k=='n')return['n',t.v];if(t.v=='('){const e=E();eat(')');return e}
   if(t.k=='i'){if(pk().v=='('){p++;return['c',t.v,args(),t.l]}if(pk().v=='['){p++;const i=E();eat(']');return['a',t.v,i,t.l]}return['v',t.v,t.l]}throw er(t.l,'espressione non valida vicino a «'+t.v+'»')}
  const cmp=()=>{const l=E(),o=pk().v;if(pk().k=='p'&&['==','!=','<','>','<=','>='].includes(o)){p++;return['cmp',o,l,E()]}return['nz',l]};
- const C=()=>{let a=cmp();while(pk().v=='&&'){p++;a=['and',a,cmp()]}return a};
+ const AN=()=>{let a=cmp();while(pk().v=='&&'){p++;a=['and',a,cmp()]}return a},C=()=>{let a=AN();while(pk().v=='||'){p++;a=['or',a,AN()]}return a};
  function B(){eat('{');const r=[];while(pk().v!='}'){if(!tk[p])throw er(line,'manca «}»');r.push(S())}p++;return r}
  function S(){const t=tk[p];if(!t)throw er(line,'blocco non chiuso');
+  if(t.v=='var'){p++;do{const n=tk[p++];if(!n||n.k!='i')throw er(t.l,'nome di variabile mancante');if(pk().v=='[')throw er(t.l,'gli array locali non sono supportati: dichiaralo fuori dalla funzione');LOC[curF][n.v]=curF+'_'+n.v;V[curF+'_'+n.v]=vz++;if(vz>0xF0)throw er(t.l,'troppe variabili (max 208)')}while(pk().v==','&&++p);eat(';');return['nop',t.l]}
+  if(t.v=='for'){p++;eat('(');const i=SS();eat(';');const c=C();eat(';');const q=SS();eat(')');const b=B();return['block',[i,['while',c,[...b,q],t.l]]]}
   if(t.v=='if'){p++;eat('(');const c=C();eat(')');const a=B();let b=null;if(pk().v=='else'){p++;b=pk().v=='if'?[S()]:B()}return['if',c,a,b,t.l]}
   if(t.v=='while'){p++;eat('(');const c=C();eat(')');return['while',c,B(),t.l]}
-  if(t.v=='return'){p++;eat(';');return['ret',t.l]}
-  p++;if(pk().v=='('){p++;const a=args();eat(';');return['call',t.v,a,t.l]}
-  let ix=null;if(pk().v=='['){p++;ix=E();eat(']')}const o=tk[p++];if(!o||!['=','+=','-='].includes(o.v))throw er(t.l,'istruzione non valida: «'+t.v+'»');const e=E();eat(';');return['set',t.v,ix,o.v,e,t.l]}
- const V={},A={},F={},K={BTN_A:128,BTN_B:64,BTN_SELECT:32,BTN_START:16,BTN_UP:8,BTN_DOWN:4,BTN_LEFT:2,BTN_RIGHT:1};let vz=0x20,va=0x300;
+  if(t.v=='return'){p++;let e=null;if(pk().v!=';')e=E();eat(';');return['ret',e,t.l]}
+  const n=SS();eat(';');return n}
+ function SS(){const t=tk[p++];if(pk().v=='('){p++;return['call',t.v,args(),t.l]}let ix=null;if(pk().v=='['){p++;ix=E();eat(']')}const o=tk[p++];if(!o||!['=','+=','-='].includes(o.v))throw er(t.l,'istruzione non valida: «'+t.v+'»');return['set',t.v,ix,o.v,E(),t.l]}
+ const LOC={},PR={},V={},A={},F={},K={BTN_A:128,BTN_B:64,BTN_SELECT:32,BTN_START:16,BTN_UP:8,BTN_DOWN:4,BTN_LEFT:2,BTN_RIGHT:1};let vz=0x20,va=0x300,curF='';
  while(p<tk.length){const t=tk[p++];
   if(t.v=='var'){do{const n=tk[p++];if(!n||n.k!='i')throw er(t.l,'nome di variabile mancante');if(pk().v=='['){p++;const z=tk[p++].v;eat(']');A[n.v]=va;va+=z}else{V[n.v]=vz++;if(vz>0xF0)throw er(t.l,'troppe variabili (max 208)')}}while(pk().v==','&&++p);eat(';')}
   else if(t.v=='const'){const n=tk[p++].v;eat('=');K[n]=tk[p++].v;eat(';')}
-  else if(t.v=='func'){const n=tk[p++].v;eat('(');eat(')');F[n]=B()}
+  else if(t.v=='func'){const n=tk[p++].v;curF=n;LOC[n]={};PR[n]=[];eat('(');if(pk().v!=')'){do{const q=tk[p++];if(!q||q.k!='i')throw er(t.l,'nome di parametro mancante');LOC[n][q.v]=n+'_'+q.v;V[n+'_'+q.v]=vz++;PR[n].push(n+'_'+q.v)}while(pk().v==','&&++p)}eat(')');F[n]=B();curF=''}
   else throw er(t.l,'«'+t.v+'» non è valido qui (usa var, const, func)')}
- const o=[];let lb=0,cl=1,rnd=0;const L=()=>'_L'+(++lb),em=(...x)=>x.forEach(t=>o.push([t,cl]));
- const simple=r=>r[0]=='n'||(r[0]=='v'&&(r[1] in V)),opnd=r=>r[0]=='n'?'#'+(r[1]&255):'v_'+r[1];
+ const o=[];let lb=0,cl=1,rnd=0,MD=0;const res=n=>{const q=(LOC[curF]||{})[n];return q!==undefined?q:(n in V?n:null)};const L=()=>'_L'+(++lb),em=(...x)=>x.forEach(t=>o.push([t,cl]));
+ const simple=r=>r[0]=='n'||(r[0]=='v'&&res(r[1])!==null),opnd=r=>r[0]=='n'?'#'+(r[1]&255):'v_'+res(r[1]);
  function ex(e){const k=e[0];
   if(k=='n')return em(' lda #'+(e[1]&255));
-  if(k=='v'){const n=e[1];if(n in K)return em(' lda #'+(K[n]&255));if(n=='pad')return em(' lda nc_pad');if(n in V)return em(' lda v_'+n);throw er(e[2],'variabile sconosciuta: '+n)}
+  if(k=='v'){const n=e[1];const q=res(n);if(q!==null)return em(' lda v_'+q);if(n in K)return em(' lda #'+(K[n]&255));if(n=='pad')return em(' lda nc_pad');throw er(e[2],'variabile sconosciuta: '+n)}
   if(k=='a'){if(!(e[1] in A))throw er(e[3],'array sconosciuto: '+e[1]);ex(e[2]);return em(' tax',' lda a_'+e[1]+',x')}
-  if(k=='c'){if(e[1]=='rand'){rnd=1;return em(' jsr nc_rand')}if(e[1]=='peek'&&e[2][0]&&e[2][0][0]=='n')return em(' lda '+e[2][0][1]);throw er(e[3],'funzione non usabile in un’espressione: '+e[1])}
+  if(k=='c'){if(e[1] in F)return callF(e[1],e[2],e[3]);if(e[1]=='rand'){rnd=1;return em(' jsr nc_rand')}if(e[1]=='peek'&&e[2][0]&&e[2][0][0]=='n')return em(' lda '+e[2][0][1]);throw er(e[3],'funzione non usabile in un’espressione: '+e[1])}
   const[,op,l,r]=e;
   if(op=='<<'||op=='>>'){if(r[0]!='n')throw er(cl,'lo scorrimento vuole una costante');ex(l);for(let i=0;i<r[1];i++)em(op=='<<'?' asl a':' lsr a');return}
+  if(op=='*'||op=='/'||op=='%'){ex(l);em(' pha');ex(r);em(' sta nc_t',' pla',' jsr '+(op=='*'?'nc_mul':'nc_div'));if(op=='%')em(' lda nc_u');MD|=op=='*'?1:2;return}
   const ins={'+':['clc','adc'],'-':['sec','sbc'],'&':['and'],'|':['ora'],'^':['eor']}[op];ex(l);
   if(simple(r))ins.forEach((x,i)=>em(' '+x+(i==ins.length-1?' '+opnd(r):'')));else{em(' pha');ex(r);em(' sta nc_t',' pla');ins.forEach((x,i)=>em(' '+x+(i==ins.length-1?' nc_t':'')))}}
  function cnd(c,Fl){
+  if(c[0]=='or'){const m=L(),t=L();cnd(c[1],m);em(' jmp '+t,m+':');cnd(c[2],Fl);em(t+':');return}
   if(c[0]=='and'){cnd(c[1],Fl);cnd(c[2],Fl);return}
   const t=L();
   if(c[0]=='nz'){ex(c[1]);em(' cmp #0',' bne '+t,' jmp '+Fl,t+':');return}
@@ -2025,13 +2029,16 @@ function ncCompile(src){
  function st(s){const k=s[0];if(s[s.length-1]>0)cl=s[s.length-1];
   if(k=='if'){const e=L(),end=L();cnd(s[1],e);blk(s[2]);if(s[3]){em(' jmp '+end,e+':');blk(s[3]);em(end+':')}else em(e+':')}
   else if(k=='while'){const a=L(),e=L();em(a+':');cnd(s[1],e);blk(s[2]);em(' jmp '+a,e+':')}
-  else if(k=='ret')em(' rts');
+  else if(k=='ret'){if(s[1])ex(s[1]);em(' rts')}
+  else if(k=='nop'){}
+  else if(k=='block')blk(s[1]);
   else if(k=='call')call(s);
   else{const[,n,ix,op,e,l]=s;let ee=e;if(op!='=')ee=['b',op[0],ix?['a',n,ix,l]:['v',n,l],e];
    if(ix){if(!(n in A))throw er(l,'array sconosciuto: '+n);ex(ee);em(' pha');ex(ix);em(' tax',' pla',' sta a_'+n+',x')}
-   else{if(!(n in V))throw er(l,'variabile sconosciuta: '+n);ex(ee);em(' sta v_'+n)}}}
+   else{const q=res(n);if(q===null)throw er(l,'variabile sconosciuta: '+n);ex(ee);em(' sta v_'+q)}}}
+ function callF(n,a,l){if(a.length!=PR[n].length)throw er(l,n+' vuole '+PR[n].length+' argomenti');a.forEach(x=>{ex(x);em(' pha')});for(let i=a.length-1;i>=0;i--)em(' pla',' sta v_'+PR[n][i]);em(' jsr nc_'+n)}
  function call(s){const[,n,a,l]=s,cst=(x,w)=>{if(!x||x[0]!='n')throw er(l,n+': '+w+' deve essere una costante');return x[1]};
-  if(n in F){if(a.length)throw er(l,'le funzioni non hanno parametri');return em(' jsr nc_'+n)}
+  if(n in F)return callF(n,a,l);
   if(n=='spr'){const b=cst(a[0],'il numero dello sprite')*4;if(a.length<4)throw er(l,'spr(n, x, y, tile [, attr])');ex(a[2]);em(' sta nc_oam+'+b);ex(a[3]);em(' sta nc_oam+'+(b+1));if(a[4])ex(a[4]);else em(' lda #0');em(' sta nc_oam+'+(b+2));ex(a[1]);return em(' sta nc_oam+'+(b+3))}
   if(n=='poke'){const ad=cst(a[0],'l’indirizzo');ex(a[1]);return em(' sta '+ad)}
   if(n=='ppu_addr')return em(' lda #'+cst(a[0],'hi'),' sta PPUADDR',' lda #'+cst(a[1],'lo'),' sta PPUADDR');
@@ -2040,11 +2047,11 @@ function ncCompile(src){
   if(n=='wait_vblank'){const x=L();return em(x+':',' bit PPUSTATUS',' bpl '+x)}
   if(n=='load_palette'){const x=L();if(!a[0]||a[0][0]!='v')throw er(l,'load_palette(etichetta)');return em(' lda #$3F',' sta PPUADDR',' lda #0',' sta PPUADDR',' ldx #0',x+':',' lda '+a[0][1]+',x',' sta PPUDATA',' inx',' cpx #32',' bne '+x)}
   throw er(l,'funzione sconosciuta: '+n)}
- for(const n in F){cl=1;em('nc_'+n+':');blk(F[n]);em(' rts')}
- const fun=o.splice(0),pre=['; --- generato dal compilatore NESC ---','PPUCTRL=$2000','PPUMASK=$2001','PPUSTATUS=$2002','OAMADDR=$2003','PPUSCROLL=$2005','PPUADDR=$2006','PPUDATA=$2007','OAMDMA=$4014','JOY=$4016','nc_oam=$0200','nc_pad=$00','nc_t=$01','nc_sx=$02','nc_sy=$03','nc_rnd=$04',
+ for(const n in F){cl=1;curF=n;em('nc_'+n+':');blk(F[n]);em(' rts')}curF='';
+ const fun=o.splice(0),pre=['; --- generato dal compilatore NESC ---','PPUCTRL=$2000','PPUMASK=$2001','PPUSTATUS=$2002','OAMADDR=$2003','PPUSCROLL=$2005','PPUADDR=$2006','PPUDATA=$2007','OAMDMA=$4014','JOY=$4016','nc_oam=$0200','nc_pad=$00','nc_t=$01','nc_sx=$02','nc_sy=$03','nc_rnd=$04','nc_u=$05',
   ...Object.entries(V).map(([n,a])=>'v_'+n+'=$'+a.toString(16)),...Object.entries(A).map(([n,a])=>'a_'+n+'=$'+a.toString(16)),'.org $8000','reset:',' sei',' cld',' ldx #$FF',' txs',' inx',' stx PPUCTRL',' stx PPUMASK','nc_v1: bit PPUSTATUS',' bpl nc_v1',' lda #$FF','nc_h: sta nc_oam,x',' inx',' bne nc_h','nc_v2: bit PPUSTATUS',' bpl nc_v2',' lda #$A5',' sta nc_rnd',...('init' in F?[' jsr nc_init']:[]),' lda #0',' sta PPUSCROLL',' sta PPUSCROLL',' lda #%10000000',' sta PPUCTRL',' lda #%00011110',' sta PPUMASK','nc_fv: jmp nc_fv',
   'nmi:',' pha',' txa',' pha',' tya',' pha',' lda #0',' sta OAMADDR',' lda #>nc_oam',' sta OAMDMA',' lda #1',' sta JOY',' lda #0',' sta JOY',' ldx #8','nc_rd: lda JOY',' lsr a',' rol nc_pad',' dex',' bne nc_rd',...('frame' in F?[' jsr nc_frame']:[]),' lda nc_sx',' sta PPUSCROLL',' lda nc_sy',' sta PPUSCROLL',' pla',' tay',' pla',' tax',' pla',' rti','irq: rti'],
-  rr=rnd?['nc_rand:',' lda nc_rnd',' asl a',' bcc nc_rn',' eor #$1D','nc_rn: sta nc_rnd',' rts']:[];
+  rr=[...(rnd?['nc_rand:',' lda nc_rnd',' asl a',' bcc nc_rn',' eor #$1D','nc_rn: sta nc_rnd',' rts']:[]),...(MD&1?['nc_mul:',' sta nc_u',' lda #0',' ldx #8','nc_m1: lsr nc_u',' bcc nc_m2',' clc',' adc nc_t','nc_m2: asl nc_t',' dex',' bne nc_m1',' rts']:[]),...(MD&2?['nc_div:',' ldx nc_t',' beq nc_dz',' ldx #0','nc_d1: cmp nc_t',' bcc nc_d2',' sbc nc_t',' inx',' jmp nc_d1','nc_d2: sta nc_u',' txa',' rts','nc_dz: sta nc_u',' lda #255',' rts']:[])];
  return[...pre.map(t=>[t,1]),...fun,...rr.map(t=>[t,1]),...raw.map(t=>[t,1]),...['.org $FFFA','.word nmi, reset, irq'].map(t=>[t,1])]}
 {const R=(t,n=1)=>('.tile '+t+'\n').repeat(n);
 EX.push({'main.nc':`// MONETE - raccogli le monete che cadono (frecce sinistra/destra). Scritto in NESC, il linguaggio ad alto livello dell'IDE.
