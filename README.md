@@ -1,137 +1,134 @@
 # NES IDE
 
-Un ambiente di sviluppo per la NES (Nintendo Entertainment System) in **un solo file HTML**: si apre in un browser, non serve installare nulla né avere internet.
-Dentro c'è tutto quello che serve per scrivere, assemblare, provare ed esportare un gioco.
+Ambiente di sviluppo per la Nintendo Entertainment System contenuto in **un solo file HTML** (`NES_IDE.html`): editor, linguaggio ad alto livello, assembler 6502, editor grafici e musicale, emulatore e debugger. Si apre in un browser moderno, senza installazione e senza connessione.
 
-> **Stato del progetto:** è in costruzione. Funziona per scrivere e provare giochi in assembly 6502, ma non è ancora completo come un ambiente professionale (vedi «Cosa manca»).
+## Avvio rapido
 
-## Come si usa
+1. Aprire `NES_IDE.html` in un browser (Chrome, Edge, Firefox, Safari).
+2. Scegliere un esempio dal menu **Esempi** oppure scrivere il proprio codice.
+3. **▶ RUN** (`F9` o `Ctrl+Invio`) compila e avvia il gioco nello schermo a destra.
+4. Controlli: frecce, `Z` = B, `X` = A, `Invio` = Start, `Shift` = Select (cliccare prima sullo schermo). Sui dispositivi touch compaiono i tasti a schermo.
 
-1. Apri `NES_IDE.html` in un browser moderno (Chrome, Edge, Firefox, Safari).
-2. Scegli un esempio dal menu **Esempi** oppure scrivi il tuo codice a sinistra.
-3. Premi **▶ RUN** (o `F9`, o `Ctrl+Invio`): il codice viene assemblato e il gioco parte nello schermo a destra.
-4. Clicca sullo schermo per usare la tastiera: **frecce**, **Z** = B, **X** = A, **Invio** = Start, **Shift** = Select.
-5. **↓ .NES** scarica la ROM, che funziona anche in altri emulatori.
-6. **↓ HTML** scarica una **pagina giocabile**: un solo file HTML con il gioco già dentro (si apre con un pulsante «▶ GIOCA», senza editor). Pesa quanto l'IDE più la ROM, perché contiene l'emulatore.
-7. **🔗 LINK** copia un link che contiene tutto il progetto (compresso nell'indirizzo): funziona se pubblichi questa pagina su un sito, e chi apre il link ritrova il tuo progetto.
+Esportazione: **↓ .NES** (ROM per altri emulatori o hardware), **↓ HTML** (pagina giocabile autonoma), **💾 SALVA FILE**, **📦 ZIP** (intero progetto), **🔗 LINK** (progetto nell'indirizzo, utile con la pagina pubblicata su un sito).
 
-Gli errori compaiono nella console sotto l'editor, con file e riga; cliccando sull'errore ti porta al punto giusto.
+## Linguaggio NESC
 
-## Cosa c'è dentro
+NESC è un linguaggio ad alto livello che viene compilato in assembly 6502 all'interno dell'IDE. I file con estensione `.nc` possono essere il file principale del progetto oppure essere inclusi con `.include "file.nc"`. Il compilatore genera reset, NMI, lettura del controller e vettori: bastano `init()` e `frame()`.
 
-**Editor e assembler**
-- Editor con evidenziazione e numeri di riga, salvataggio automatico nel browser.
-- Assembler 6502 completo per le istruzioni ufficiali, con etichette, costanti, espressioni, `.byte`, `.word`, `.res`, `.org`.
-- **Progetti con più file** (schede in alto), `.include "file"`, **macro** (`.macro` … `.endmacro`), `.rept`, `.if`/`.else`/`.endif`, etichette locali `@nome`.
-- Salvataggio e apertura di tutto il progetto in **.zip**.
+```c
+var px, py, score;      // variabili a 8 bit (zero page)
+var buf[16];            // array (RAM $0300 in poi)
+const SPEED = 2;
 
-**Emulatore NES**
-- CPU 6502 verificata istruzione per istruzione con il test standard `nestest`: **tutte le 8991 istruzioni** del log di riferimento, comprese le istruzioni **non ufficiali** (LAX, SAX, DCP, ISB, SLO, RLA, SRE, RRA e NOP varie).
-- PPU con sfondo, sprite (8×8 e 8×16), scroll che può cambiare **riga per riga**, sprite 0 hit approssimato, **limite di 8 sprite per riga** con flag di overflow, modalità **NTSC o PAL** (menu in alto).
-- Audio: due onde quadre (con **sweep**), triangolo, rumore e **canale DMC** (campioni), approssimati con Web Audio.
-- **Mapper:** 0 (NROM), 1 (MMC1, modo PRG standard), 2 (UxROM), 3 (CNROM) e **4 (MMC3)** con banchi PRG da 8 KB, banchi CHR da 1 KB e **interrupt di scanline (IRQ)**, con più banchi PRG/CHR.
+func init() {           // eseguita una volta, a schermo spento
+  load_palette(palette);
+  px = 120; py = 200;
+}
 
-**Musica**
-- **Tracker** a 4 colonne (quadra 1, quadra 2, triangolo, rumore), fino a 120 righe: suoni le note con la tastiera, scegli volume e duty, ascolti l'anteprima e premi «Applica al codice».
-- **Driver 6502 pronto** (`music_init`, `music_update`): lo inserisci con un pulsante, chiami `jsr music_init` una volta e `jsr music_update` a ogni NMI. Il driver reale e l'anteprima producono gli stessi registri APU (verificato).
+func frame() {          // eseguita a ogni vblank (60 Hz)
+  if (pad & BTN_LEFT) { px -= SPEED; }
+  spr(0, px, py, 1);
+}
 
-**Editor grafici**
-- **Tile:** disegni i 512 tile (8×8, 4 colori), con specchio, copia e incolla, scelta dei colori NES, anteprima nel gioco in esecuzione.
-- **Importa immagine:** converte un PNG/JPG nei 4 colori della palette scelta (fino a 16 tile di larghezza).
-- **Schermate e livelli:** disegni lo sfondo (32×30 tile) con i colori (palette per blocchi 2×2). Con **＋ Schermata** (fino a 4) costruisci un livello largo, e l'editor genera da solo i dati per lo scorrimento **orizzontale o verticale** (pulsante «Livello: orizzontale/verticale»; colonne o righe e attributi, blocco `<LV>`). L'esempio «Livello con scorrimento» contiene il motore pronto: `put_col` carica le colonne mentre la telecamera si muove, avanti e indietro. L'esempio «Livello verticale» fa lo stesso con le righe (`put_row`).
-- **Sprite composti e animazioni:** componi personaggi con più tile, con specchio, e crei i frame di un'animazione. Una rotina `draw_meta` pronta li copia negli sprite.
+asm {                   // assembly grezzo: dati, palette, tile
+palette: .byte $0F,$30,$16,$27, ...
+}
+```
 
-**Debugger**
-- Registri, istruzioni disassemblate dal PC (con il nome dell'etichetta), memoria, passo singolo, un frame alla volta, breakpoint.
-
-## Strumenti dell'editor
-
-- **↶ ANNULLA:** annulla l'ultimo «Applica al codice» (tile, schermate, sprite) o «Sostituisci tutto» (fino a 30 passi). Per il testo digitato vale l'annulla normale del browser.
-- **Cerca / sostituisci** sopra l'editor (senza distinzione tra maiuscole e minuscole, nel file aperto) e **Vai a simbolo…** per saltare a un'etichetta anche in un altro file.
-- **Debugger:** oltre a registri e memoria, mostra la **palette PPU** (32 colori) e la lista degli **sprite (OAM)**.
-- **💾 STATO / ⏏ CARICA STATO:** salva e ricarica lo stato dell'emulatore. **⏪ RIAVVOLGI:** tieni premuto per tornare indietro negli ultimi ~20 secondi.
-- **📷** salva uno screenshot PNG; **⏺ REC** registra un video `.webm` (non GIF).
-- **Controlli touch** sullo schermo (croce, A, B, Select, Start): compaiono sui dispositivi con touch.
-- **Avvisi del compilatore** (⚠ in giallo nella console, cliccabili): valori fuori da un byte (`lda #300`, `.byte 999`) ed etichette mai usate. Gli errori (✖) indicano file e riga.
-- **Viewer dei pattern table** (le due tabelle CHR della PPU) e **viewer dei nametable** nel Debugger: i 4 nametable della PPU con il mirroring e un riquadro rosso sull'area visibile.
-- **Trova in tutti** cerca in ogni file del progetto e porta alla riga cliccando.
-- **? GUIDA:** guida rapida integrata.
-
-## Esempi inclusi (menu «Esempi»)
-
-| Esempio | Cosa mostra |
+| Elemento | Dettagli |
 |---|---|
-| Sprite con la croce direzionale | il minimo: palette, tile, sprite, controller, NMI |
-| Modello vuoto | punto di partenza |
-| Schermata | uno sfondo disegnato con l'editor schermate |
-| Progetto multi-file con macro | `main.asm` + `nes.inc` (macro) + `gfx.asm` |
-| Livello con scorrimento | 4 schermate disegnate con l'editor, scorrimento orizzontale con le frecce, colonne caricate al volo (anche all'indietro) |
-| Musica | un brano di prova (melodia, basso, triangolo, batteria) suonato dal driver |
-| Livello verticale | 4 schermate impilate, scorrimento su/giù con righe caricate al volo (mirroring orizzontale) |
-| **Pong** | tu (frecce su/giù) contro la CPU, rimbalzi, punteggio a cifre, azzeramento a 10 |
-| **Meteore** | schiva le rocce con sinistra/destra, punteggio a due cifre, game over (nave rossa) e Start per ricominciare |
+| Dichiarazioni | `var a, b;` · `var v[N];` · `const K = 5;` · `func nome() { ... }` |
+| Istruzioni | `x = e;` · `x += e;` · `x -= e;` · `v[i] = e;` · `if / else if / else` · `while` · `return;` · `nome();` |
+| Espressioni | `+ - & \| ^ << >>` (scorrimento con costante), parentesi, numeri decimali, `$hex`, `%bin`, `v[i]`, `rand()`, `peek(addr)` |
+| Condizioni | `== != < > <= >=`, `&&`, valore diverso da zero |
+| Costanti predefinite | `BTN_A BTN_B BTN_SELECT BTN_START BTN_UP BTN_DOWN BTN_LEFT BTN_RIGHT`; variabile `pad` = stato del controller |
+| Funzioni predefinite | `spr(n, x, y, tile [, attr])` · `poke(addr, v)` · `ppu_addr(hi, lo)` · `ppu_write(v)` · `load_palette(etichetta)` · `scroll(x, y)` · `wait_vblank()` |
+| Assembly | blocco `asm { ... }`; le righe che iniziano con `.`, `;` o `etichetta:` al livello superiore passano invariate (tile, dati, blocchi degli editor) |
 
-Pong e Meteore sono progetti con più file (`main.asm`, `nes.inc`, `font.asm`) e usano macro, etichette locali `@` e `.rept`: sono un buon punto di partenza da modificare.
+Limiti attuali: solo valori a 8 bit senza segno, funzioni senza parametri né valore di ritorno, niente `for`, `||`, moltiplicazione e divisione. Gli errori indicano file e riga.
 
+## Assembler
 
-## Come lavorano gli editor con il codice
+Assembler a due passate per tutte le istruzioni 6502 ufficiali, con etichette, costanti, espressioni (`<x`, `>x`) e i modi di indirizzamento standard.
 
-Gli editor non salvano in file separati: scrivono nel sorgente blocchi riconoscibili, e li rileggono da lì. Così il progetto resta un normale insieme di file `.asm`.
+```
+.org $8000            indirizzo                     .include "file"     inserisce un file
+.byte 1,2,$FF  (.db)  byte                          .macro nome a,b     macro (.endmacro)
+.word etichetta (.dw) parole a 16 bit               .rept N             ripete un blocco (.endrept)
+.res 16               spazio vuoto                  .if costante        condizione (.else, .endif)
+.mirror v|h           mirroring                     @nome:              etichetta locale
+.mapper 0|1|2|3|4     mapper                        .chr N / .tile …    tile (8 righe di cifre 0–3 o .)
+.prgbanks N  .chrbanks N  .bank K                   banchi (PRG 16 KB, CHR 8 KB)
+```
 
-| Blocco | Cosa contiene | Come usarlo |
+I vettori vanno in `.org $FFFA` con `.word nmi, reset, irq` (NESC li genera da solo). Gli **avvisi** (⚠) segnalano valori fuori da un byte ed etichette mai usate; gli **errori** (✖) indicano file e riga e sono cliccabili.
+
+## Progetti
+
+Più file per progetto (schede in alto, ★ = file principale), salvataggio e apertura in `.zip`, macro, `.include`, ricerca (`Trova`, `Trova in tutti`, `Sostituisci tutto`), salto a simbolo e annulla per le modifiche automatiche degli editor.
+
+## Editor grafici e musicale
+
+Gli editor scrivono blocchi riconoscibili nel file principale e li rileggono da lì: il progetto resta un insieme di normali file di testo.
+
+| Editor | Blocco nel sorgente | Contenuto |
 |---|---|---|
-| `; <GFX> … ; </GFX>` | righe `.chr` e `.tile` con i tile | caricati nella CHR della ROM |
-| `; <NT> … ; </NT>` | `screen` (1024 byte), `screen_pal` (16 byte) ed eventuali `screen_1…` | copiali nella PPU (vedi esempio «Schermata») |
-| `; <MU> … ; </MU>` | `MUS_SPEED`, `MUS_ROWS`, `music_ch0…3` (2 byte per riga: nota, registro) e le tabelle delle note | letti dal driver musicale |
-| `; <LV> … ; </LV>` | `LEVEL_W`, `LEVEL_MAXCAM`, `level_colptr`, `level_cols`, `level_attr` (orizzontale) oppure `LEVEL_H`, `level_rowptr`, `level_rows`, `level_vattr` (verticale); generato, non modificarlo | usato dal motore di scorrimento |
-| `; <MS> … ; </MS>` | `meta_0…` e `meta_table` | `draw_meta` li disegna negli sprite |
+| Tile (512 tile, 4 colori, specchio, copia/incolla, **importa immagine**) | `; <GFX>` | righe `.chr` e `.tile` |
+| Schermate (32×30, attributi di colore) e livelli | `; <NT>` | `screen`, `screen_pal`, `screen_1…` |
+| Livelli (fino a 4 schermate, **orizzontali o verticali**) | `; <LV>` | colonne o righe e attributi per lo scorrimento (`level_cols`/`level_rows`, …) |
+| Sprite composti e animazioni | `; <MS>` | `meta_0…`, `meta_table` (dy, tile, attr, dx; `$80` chiude il frame); `draw_meta` pronta |
+| Musica (tracker a 4 canali, fino a 120 righe) | `; <MU>` | `music_chN`, tabelle delle note; driver `music_init`/`music_update` pronto |
 
-Gli editor applicano le modifiche al codice quando premi **Applica al codice** o **RUN**. I blocchi si scrivono nel file principale (★) e prima del `.org $FFFA` dei vettori.
+Le modifiche entrano nel sorgente con «Applica al codice» o con RUN (il pulsante ↶ ANNULLA le annulla). Il driver musicale reale e l'anteprima del tracker producono gli stessi registri APU.
 
-**Formato degli sprite composti:** per ogni sprite quattro byte `dy, tile, attr, dx` (spostamenti con segno rispetto al punto di riferimento), poi `$80` per chiudere il frame. I tile usano la tabella scelta da PPUCTRL bit 3.
+## Emulatore e debugger
 
-## Direttive dell'assembler
+- **CPU 6502** completa, comprese le istruzioni non ufficiali; coincide con il log di riferimento di `nestest` su tutte le 8991 istruzioni.
+- **PPU:** sfondo, sprite 8×8 e 8×16, scroll per riga, limite di 8 sprite per riga con flag di overflow, sprite 0 hit approssimato, NTSC o PAL.
+- **Mapper:** 0 (NROM), 1 (MMC1, modo PRG standard), 2 (UxROM), 3 (CNROM), 4 (MMC3 con IRQ di scanline).
+- **Audio** (Web Audio): due onde quadre con sweep, triangolo, rumore e DMC.
+- **Debugger:** registri, istruzioni disassemblate con nome dell'etichetta, memoria, passo singolo, frame, breakpoint; viewer di palette, sprite (OAM), nametable e pattern table.
+- **Stati salvati**, riavvolgimento (circa 20 secondi), screenshot PNG e registrazione video `.webm`.
 
-```
-.org $8000           indirizzo
-.byte 1,2,$FF        byte (anche .db)
-.word etichetta      parole a 16 bit (anche .dw)
-.res 16              spazio vuoto
-.mirror v|h          mirroring dello sfondo
-.mapper N            0, 1, 2 o 3
-.prgbanks N          banchi PRG da 16 KB
-.chrbanks N          banchi CHR da 8 KB
-.bank K              scrive nel banco K a $8000 (l'ultimo è fisso a $C000)
-.chr N / .tile …     tile N, poi 8 righe di 8 cifre 0–3 (o .)
-.include "file"      inserisce un altro file
-.macro nome a,b      definisce una macro (chiusa da .endmacro)
-.rept N              ripete un blocco (chiuso da .endrept)
-.if costante         assemblaggio condizionale (.else, .endif)
-@nome:               etichetta locale
-```
+## Esempi
 
-Ricorda di mettere i vettori a `.org $FFFA` con `.word nmi, reset, 0`.
-
-## Stato di avanzamento 
-| Area | Stato |
+| Esempio | Contenuto |
 |---|---|
-| Linguaggio ad alto livello | ~15% (solo macro, `.include`, `.if`: si scrive ancora in assembly) |
-| Progetti (file, zip, macro, esempi) | ~80% |
-| Grafica (tile, PNG, sprite composti, schermate, livelli) | ~80% |
-| Suono (tracker, driver, sweep, DMC) | ~65% |
-| Emulatore (CPU completa, mapper 0–4, PAL) | ~65% |
-| Debug (registri, memoria, viewer, stati) | ~70% |
-| Editor di testo (cerca, simboli, avvisi) | ~60% |
-| Esportazione (`.nes`, `.asm`, zip, pagina HTML giocabile, link) | ~70% |
-| Aiuto ed esempi | ~60% |
-| **Media** | **~63%** |
+| Sprite con la croce direzionale | palette, tile, sprite, controller, NMI |
+| Schermata | sfondo disegnato con l'editor schermate |
+| Progetto multi-file con macro | `main.asm`, `nes.inc`, `gfx.asm` |
+| **Pong** | giocatore contro CPU, punteggio a cifre |
+| **Meteore** | schivare le rocce, game over e ripartenza |
+| Livello con scorrimento / Livello verticale | 4 schermate, colonne o righe caricate al volo |
+| Musica | brano di prova con il driver |
+| **NESC: Raccogli le monete** | gioco completo in linguaggio ad alto livello |
 
+## Stato di avanzamento
 
-## Cosa manca 
+Stima del completamento per area, aggiornata a ogni rilascio. Il riferimento per il confronto è un ambiente completo per un altro sistema a 8 bit (compilatore proprio, emulatore, editor grafici e sonori, strumenti di profilo).
 
-Questo non è ancora un ambiente completo. Mancano:
-- **livelli** più grandi di 4 schermate e scorrimento nelle due direzioni insieme;
-- **audio ancora approssimato:** niente interruzioni del DMC, un solo brano per progetto, niente strumenti con inviluppo personalizzato, nessun effetto (vibrato, slide);
-- **linguaggio ad alto livello** per la NES (oggi si scrive solo assembly);
-- **emulatore ancora semplificato:** niente temporizzazione al ciclo della PPU (lo scroll cambia per riga, non per pixel), sprite 0 hit approssimato, MMC1 solo nel modo PRG standard, mancano altri mapper (MMC5, VRC…), le tabelle di note del tracker e del DMC sono quelle NTSC anche in modalità PAL;
-- **altri strumenti:** esportazione GIF, sostituzione in tutto il progetto, avvisi più numerosi del compilatore;
+| Area | Stato | Note |
+|---|---|---|
+| Linguaggio ad alto livello (NESC) | **45%** | variabili, array, `if`/`while`, funzioni, funzioni predefinite; mancano parametri, 16 bit, `for`, `\|\|`, moltiplicazione |
+| Progetti (file, zip, macro, esempi) | **80%** | |
+| Grafica (tile, immagini, sprite, schermate, livelli) | **80%** | |
+| Suono (tracker, driver, sweep, DMC) | **65%** | un solo brano per progetto, niente inviluppi o effetti |
+| Emulatore (CPU, mapper 0–4, PAL) | **65%** | niente temporizzazione al ciclo della PPU; mancano altri mapper |
+| Debug (registri, memoria, viewer, stati) | **70%** | |
+| Editor di testo (ricerca, simboli, avvisi) | **60%** | |
+| Esportazione (`.nes`, `.asm`, zip, HTML, link) | **70%** | |
+| Aiuto ed esempi | **60%** | |
+| **Media** | **66%** | |
+
+Prossime voci in programma: parametri e valori di ritorno nelle funzioni NESC, tipi a 16 bit, `for`, sostituzione in tutto il progetto, esportazione GIF, altri mapper (MMC5, VRC), più brani per progetto con strumenti ed effetti, sprite 0 hit e PPU più accurati.
+
+## Limiti noti
+
+- Lo scroll cambia per riga e non per pixel; lo sprite 0 hit è approssimato.
+- MMC1 supporta solo il modo PRG standard; le tabelle di note del tracker e del DMC sono NTSC anche in PAL.
+- L'audio è approssimato con Web Audio.
+- Il file generato con «↓ HTML» contiene l'intero IDE oltre alla ROM.
+
+## Test
+
+La logica è verificata con test automatici eseguiti in Node: CPU contro `nestest` (8991 istruzioni), assembler e modi di indirizzamento, mapper 1–4 (banchi, IRQ), scroll per riga, debugger, audio (DMC, sweep, driver contro anteprima), macro/include/`.if`, zip, editor grafici (round-trip nel sorgente), livelli orizzontali e verticali, compilatore NESC (espressioni, confronti, cicli, array, errori) e gli esempi giocabili. Il caricamento della pagina, tutti gli esempi con RUN, i pulsanti principali e la pagina esportata sono provati in un DOM simulato (jsdom). **Non sono coperti da test automatici** l'aspetto e il comportamento in un browser reale (layout, touch, download, registrazione video), il suono reale e la compatibilità con giochi commerciali.
