@@ -42,7 +42,7 @@ palette: .byte $0F,$30,$16,$27, ...
 | Espressioni | `+ - * / % & \| ^ << >>` (scorrimento con costante), chiamate di funzione con argomenti, parentesi, numeri decimali, `$hex`, `%bin`, `v[i]`, `rand()`, `peek(addr)` |
 | Condizioni | `== != < > <= >=`, `&&`, `\|\|` (`&&` ha la precedenza), valore diverso da zero |
 | Costanti predefinite | `BTN_A BTN_B BTN_SELECT BTN_START BTN_UP BTN_DOWN BTN_LEFT BTN_RIGHT`; variabile `pad` = stato del controller |
-| Funzioni predefinite | `spr(n, x, y, tile [, attr])` · `poke(addr, v)` · `ppu_addr(hi, lo)` · `ppu_write(v)` · `load_palette(etichetta)` · `scroll(x, y)` · `wait_vblank()` |
+| Funzioni predefinite | `spr(n, x, y, tile [, attr])` (n costante) · `spri(i, x, y, tile [, attr])` (i è un'espressione: utile nei cicli) · `poke(addr, v)` · `ppu_addr(hi, lo)` · `ppu_write(v)` · `load_palette(etichetta)` · `scroll(x, y)` · `wait_vblank()` |
 | Assembly | blocco `asm { ... }`; le righe che iniziano con `.`, `;` o `etichetta:` al livello superiore passano invariate (tile, dati, blocchi degli editor) |
 
 Tipi: `var` a 8 bit e `var16` a 16 bit, entrambi senza segno. Un'espressione è a 16 bit se contiene una `var16` o un numero maggiore di 255; assegnandola a una `var` si tronca al byte basso. `* / %` lavorano solo a 8 bit; parametri e valori di ritorno sono a 8 bit. Limiti attuali: niente ricorsione (parametri e variabili locali sono statici); niente array locali; al massimo 208 variabili; la divisione procede per sottrazioni ripetute (lenta con quozienti grandi) e la divisione per zero restituisce 255; `x % 1` va scritto con lo spazio, altrimenti `%1` è letto come numero binario. Gli errori indicano file e riga.
@@ -102,6 +102,8 @@ Le modifiche entrano nel sorgente con «Applica al codice» o con RUN (il pulsan
 | Livello con scorrimento / Livello verticale | 4 schermate, colonne o righe caricate al volo |
 | Musica | brano di prova con il driver |
 | **NESC: Raccogli le monete** | gioco completo in linguaggio ad alto livello |
+| **NESC: Piattaforme** | salto con gravità, atterraggio su piattaforme, monete, punteggio; lo sfondo è disegnato da codice con `var16` |
+| **NESC: Sparatutto** | proiettili e nemici con array e cicli, collisioni, game over e ripartenza con Start |
 
 ## Stato di avanzamento
 
@@ -109,7 +111,7 @@ Stima del completamento per area, aggiornata a ogni rilascio. Il riferimento per
 
 | Area | Stato | Note |
 |---|---|---|
-| Linguaggio ad alto livello (NESC) | **75%** | variabili, array, `if`/`while`/`for`, funzioni con parametri e ritorno, `* / %`, `&&`/`\|\|`, funzioni predefinite; mancano array locali, ricorsione, `* / %` a 16 bit, valori con segno, ottimizzazione del codice |
+| Linguaggio ad alto livello (NESC) | **78%** | variabili, array, `if`/`while`/`for`, funzioni con parametri e ritorno, `* / %`, `&&`/`\|\|`, funzioni predefinite; mancano array locali, ricorsione, `* / %` a 16 bit, valori con segno, ottimizzazione del codice |
 | Progetti (file, zip, macro, esempi) | **80%** | |
 | Grafica (tile, immagini, sprite, schermate, livelli) | **80%** | |
 | Suono (tracker, driver, sweep, DMC) | **65%** | un solo brano per progetto, niente inviluppi o effetti |
@@ -117,8 +119,8 @@ Stima del completamento per area, aggiornata a ogni rilascio. Il riferimento per
 | Debug (registri, memoria, viewer, stati) | **70%** | |
 | Editor di testo (ricerca, simboli, avvisi) | **60%** | |
 | Esportazione (`.nes`, `.asm`, zip, HTML, link) | **70%** | |
-| Aiuto ed esempi | **60%** | |
-| **Media** | **69%** | |
+| Aiuto ed esempi | **70%** | 11 esempi, quattro giochi completi |
+| **Media** | **71%** | |
 
 Prossime voci in programma: ottimizzazione del codice generato in NESC, sostituzione in tutto il progetto, esportazione GIF, altri mapper (MMC5, VRC), più brani per progetto con strumenti ed effetti, sprite 0 hit e PPU più accurati.
 
@@ -129,6 +131,3 @@ Prossime voci in programma: ottimizzazione del codice generato in NESC, sostituz
 - L'audio è approssimato con Web Audio.
 - Il file generato con «↓ HTML» contiene l'intero IDE oltre alla ROM.
 
-## Test
-
-La logica è verificata con test automatici eseguiti in Node: CPU contro `nestest` (8991 istruzioni), assembler e modi di indirizzamento, mapper 1–4 (banchi, IRQ), scroll per riga, debugger, audio (DMC, sweep, driver contro anteprima), macro/include/`.if`, zip, editor grafici (round-trip nel sorgente), livelli orizzontali e verticali, compilatore NESC (espressioni, confronti, cicli, `for`, parametri, ritorno, variabili locali, `||`, `* / %`, `var16`, array, errori) e gli esempi giocabili. Il caricamento della pagina, tutti gli esempi con RUN, i pulsanti principali e la pagina esportata sono provati in un DOM simulato (jsdom). **Non sono coperti da test automatici** l'aspetto e il comportamento in un browser reale (layout, touch, download, registrazione video), il suono reale e la compatibilità con giochi commerciali.
