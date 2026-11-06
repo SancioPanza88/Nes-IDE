@@ -57,7 +57,7 @@ dialog{background:var(--pn);color:var(--tx);border:2px solid var(--rd);max-width
 <button id="pause">⏸ PAUSA</button><button id="rst">↺ RESET</button><button id="mute">🔊 AUDIO</button><button id="undo" title="Annulla l’ultimo «Applica al codice» o «Sostituisci»">↶ ANNULLA</button><button id="svs" title="Salva lo stato dell’emulatore">💾 STATO</button><button id="lds">⏏ CARICA STATO</button><button id="rwd" title="Tieni premuto per riavvolgere (ultimi 20 secondi)">⏪ RIAVVOLGI</button><button id="shot" title="Salva uno screenshot PNG">📷</button><button id="hlp" title="Guida rapida">? GUIDA</button><button id="rec" title="Registra un video .webm">⏺ REC</button><select id="reg" title="Standard video: NTSC 60 Hz o PAL 50 Hz"><option value="0">NTSC</option><option value="1">PAL</option></select>
 <button id="nes" title="Scarica la ROM per altri emulatori o per una vera NES">↓ .NES</button><button id="exh" title="Scarica una pagina HTML giocabile con il gioco già dentro">↓ HTML</button><button id="lnk" title="Copia un link al progetto (funziona con questa pagina pubblicata su un sito)">🔗 LINK</button>
 <button id="open">📂 APRI</button><button id="save">💾 SALVA FILE</button><button id="zip" title="Esporta tutto il progetto in un .zip">📦 ZIP</button>
-<select id="ex"><option value="">Esempi…</option><option value="0">Sprite con la croce direzionale</option><option value="1">Modello vuoto</option><option value="2">Schermata (editor schermate)</option><option value="3">Progetto multi-file con macro</option><option value="4">Gioco: Pong (tu contro la CPU)</option><option value="5">Gioco: Meteore (schiva le rocce)</option><option value="6">Livello con scorrimento (4 schermate)</option><option value="7">Musica: brano di prova (tracker)</option><option value="8">Livello verticale (4 schermate)</option><option value="9">NESC: Raccogli le monete (alto livello)</option></select>
+<select id="ex"><option value="">Esempi…</option><option value="0">Sprite con la croce direzionale</option><option value="1">Modello vuoto</option><option value="2">Schermata (editor schermate)</option><option value="3">Progetto multi-file con macro</option><option value="4">Gioco: Pong (tu contro la CPU)</option><option value="5">Gioco: Meteore (schiva le rocce)</option><option value="6">Livello con scorrimento (4 schermate)</option><option value="7">Musica: brano di prova (tracker)</option><option value="8">Livello verticale (4 schermate)</option><option value="9">NESC: Raccogli le monete (alto livello)</option><option value="10">NESC: Piattaforme (salta e raccogli)</option><option value="11">NESC: Sparatutto (nemici e proiettili)</option></select>
 </div>
 <div id="main">
 <div id="L"><div id="tabs"></div><div id="fbar"><input id="fq" placeholder="Cerca" size="14"><input id="fr" placeholder="Sostituisci con" size="14"><button id="f_n">Trova</button><button id="f_a" title="Cerca in tutti i file del progetto">Trova in tutti</button><button id="f_r">Sostituisci tutto</button><select id="sy"><option value="">Vai a simbolo…</option></select></div><div id="ed"><pre id="ln"></pre><div id="w"><pre id="hl"></pre><textarea id="ta" spellcheck="false" wrap="off" aria-label="Codice assembly"></textarea></div></div><div id="con"></div></div>
@@ -2053,6 +2053,7 @@ function ncCompile(src){
  function call(s){const[,n,a,l]=s,cst=(x,w)=>{if(!x||x[0]!='n')throw er(l,n+': '+w+' deve essere una costante');return x[1]};
   if(n in F)return callF(n,a,l);
   if(n=='spr'){const b=cst(a[0],'il numero dello sprite')*4;if(a.length<4)throw er(l,'spr(n, x, y, tile [, attr])');ex(a[2]);em(' sta nc_oam+'+b);ex(a[3]);em(' sta nc_oam+'+(b+1));if(a[4])ex(a[4]);else em(' lda #0');em(' sta nc_oam+'+(b+2));ex(a[1]);return em(' sta nc_oam+'+(b+3))}
+  if(n=='spri'){if(a.length<4)throw er(l,'spri(n, x, y, tile [, attr])');ex(a[0]);em(' asl a',' asl a',' sta nc_oi');const w=(x,k)=>{ex(x);em(' ldx nc_oi',' sta nc_oam+'+k+',x')};w(a[2],0);w(a[3],1);if(a[4])w(a[4],2);else em(' lda #0',' ldx nc_oi',' sta nc_oam+2,x');return w(a[1],3)}
   if(n=='poke'){const ad=cst(a[0],'l’indirizzo');ex(a[1]);return em(' sta '+ad)}
   if(n=='ppu_addr')return em(' lda #'+cst(a[0],'hi'),' sta PPUADDR',' lda #'+cst(a[1],'lo'),' sta PPUADDR');
   if(n=='ppu_write'){ex(a[0]);return em(' sta PPUDATA')}
@@ -2061,7 +2062,7 @@ function ncCompile(src){
   if(n=='load_palette'){const x=L();if(!a[0]||a[0][0]!='v')throw er(l,'load_palette(etichetta)');return em(' lda #$3F',' sta PPUADDR',' lda #0',' sta PPUADDR',' ldx #0',x+':',' lda '+a[0][1]+',x',' sta PPUDATA',' inx',' cpx #32',' bne '+x)}
   throw er(l,'funzione sconosciuta: '+n)}
  for(const n in F){cl=1;curF=n;em('nc_'+n+':');blk(F[n]);em(' rts')}curF='';
- const fun=o.splice(0),pre=['; --- generato dal compilatore NESC ---','PPUCTRL=$2000','PPUMASK=$2001','PPUSTATUS=$2002','OAMADDR=$2003','PPUSCROLL=$2005','PPUADDR=$2006','PPUDATA=$2007','OAMDMA=$4014','JOY=$4016','nc_oam=$0200','nc_pad=$00','nc_t=$01','nc_sx=$02','nc_sy=$03','nc_rnd=$04','nc_u=$05','nc_hi=$06','nc_t2=$07',
+ const fun=o.splice(0),pre=['; --- generato dal compilatore NESC ---','PPUCTRL=$2000','PPUMASK=$2001','PPUSTATUS=$2002','OAMADDR=$2003','PPUSCROLL=$2005','PPUADDR=$2006','PPUDATA=$2007','OAMDMA=$4014','JOY=$4016','nc_oam=$0200','nc_pad=$00','nc_t=$01','nc_sx=$02','nc_sy=$03','nc_rnd=$04','nc_u=$05','nc_hi=$06','nc_t2=$07','nc_oi=$08',
   ...Object.entries(V).map(([n,a])=>'v_'+n+'=$'+a.toString(16)),...Object.entries(A).map(([n,a])=>'a_'+n+'=$'+a.toString(16)),'.org $8000','reset:',' sei',' cld',' ldx #$FF',' txs',' inx',' stx PPUCTRL',' stx PPUMASK','nc_v1: bit PPUSTATUS',' bpl nc_v1',' lda #$FF','nc_h: sta nc_oam,x',' inx',' bne nc_h','nc_v2: bit PPUSTATUS',' bpl nc_v2',' lda #$A5',' sta nc_rnd',...('init' in F?[' jsr nc_init']:[]),' lda #0',' sta PPUSCROLL',' sta PPUSCROLL',' lda #%10000000',' sta PPUCTRL',' lda #%00011110',' sta PPUMASK','nc_fv: jmp nc_fv',
   'nmi:',' pha',' txa',' pha',' tya',' pha',' lda #0',' sta OAMADDR',' lda #>nc_oam',' sta OAMDMA',' lda #1',' sta JOY',' lda #0',' sta JOY',' ldx #8','nc_rd: lda JOY',' lsr a',' rol nc_pad',' dex',' bne nc_rd',...('frame' in F?[' jsr nc_frame']:[]),' lda nc_sx',' sta PPUSCROLL',' lda nc_sy',' sta PPUSCROLL',' pla',' tay',' pla',' tax',' pla',' rti','irq: rti'],
   rr=[...(rnd?['nc_rand:',' lda nc_rnd',' asl a',' bcc nc_rn',' eor #$1D','nc_rn: sta nc_rnd',' rts']:[]),...(MD&1?['nc_mul:',' sta nc_u',' lda #0',' ldx #8','nc_m1: lsr nc_u',' bcc nc_m2',' clc',' adc nc_t','nc_m2: asl nc_t',' dex',' bne nc_m1',' rts']:[]),...(MD&2?['nc_div:',' ldx nc_t',' beq nc_dz',' ldx #0','nc_d1: cmp nc_t',' bcc nc_d2',' sbc nc_t',' inx',' jmp nc_d1','nc_d2: sta nc_u',' txa',' rts','nc_dz: sta nc_u',' lda #255',' rts']:[])];
@@ -2118,6 +2119,181 @@ palette:
 }
 .chr 1
 `+R('...22...',2)+R('..2222..',2)+R('.222222.',2)+R('22222222')+R('22....22')+R('..3333..')+R('.333333.')+R('33333333',4)+R('.333333.')+R('..3333..')+NCFONT})}
+{const R=(t,n=1)=>('.tile '+t+'\n').repeat(n);
+EX.push({'main.nc':`// PIATTAFORME - frecce per muoverti, A per saltare, raccogli le tre monete. Scritto in NESC.
+var px, py, jump, onground, tens, units, i, k;
+var16 ad;
+var plx[4], ply[4], plw[4];      // piattaforme: x, y, larghezza in pixel (la 0 è il terreno)
+var cx[3], cy[3], con[3];        // monete: x, y, ancora presente
+
+func hline(row, col, len, tile) {   // disegna una riga di tile nello sfondo
+  var16 r16;
+  r16 = row;
+  ad = 8192 + (r16 << 5) + col;     // indirizzo PPU = $2000 + riga*32 + colonna
+  poke(0x2006, ad >> 8);
+  poke(0x2006, ad & 255);
+  for (k = 0; k < len; k += 1) { ppu_write(tile); }
+}
+
+func newgame() {
+  px = 20; py = 200; jump = 0; tens = 0; units = 0;
+  for (i = 0; i < 3; i += 1) { con[i] = 1; }
+}
+
+func init() {
+  load_palette(palette);
+  plx[0] = 0;   ply[0] = 216; plw[0] = 255;
+  plx[1] = 32;  ply[1] = 168; plw[1] = 64;
+  plx[2] = 144; ply[2] = 136; plw[2] = 72;
+  plx[3] = 80;  ply[3] = 96;  plw[3] = 64;
+  cx[0] = 56;   cy[0] = 148;
+  cx[1] = 176;  cy[1] = 116;
+  cx[2] = 104;  cy[2] = 76;
+  hline(27, 0, 32, 3);
+  hline(28, 0, 32, 4);
+  hline(29, 0, 32, 4);
+  for (i = 1; i < 4; i += 1) { hline(ply[i] >> 3, plx[i] >> 3, plw[i] >> 3, 3); }
+  newgame();
+}
+
+func gravity() {
+  onground = 0;
+  py += 2;
+  for (i = 0; i < 4; i += 1) {
+    if (px + 8 > plx[i] && px < plx[i] + plw[i] && py + 16 >= ply[i] && py + 16 <= ply[i] + 4) {
+      py = ply[i] - 16;
+      onground = 1;
+    }
+  }
+}
+
+func frame() {
+  if (pad & BTN_LEFT) { if (px > 2) { px -= 2; } }
+  if (pad & BTN_RIGHT) { if (px < 240) { px += 2; } }
+  if (onground && (pad & BTN_A)) { jump = 14; }
+  if (jump > 0) {
+    py -= 3;
+    jump -= 1;
+    onground = 0;
+  } else {
+    gravity();
+  }
+  for (i = 0; i < 3; i += 1) {
+    if (con[i] && px + 8 > cx[i] && cx[i] + 8 > px && py + 16 > cy[i] && cy[i] + 8 > py) {
+      con[i] = 0;
+      units += 1;
+      if (units >= 10) { units = 0; tens += 1; }
+    }
+  }
+  if (con[0] + con[1] + con[2] == 0) { newgame(); }
+  spr(0, px, py, 1);
+  spr(1, px, py + 8, 2);
+  for (i = 0; i < 3; i += 1) {
+    if (con[i]) { spri(2 + i, cx[i], cy[i], 5); } else { spri(2 + i, 0, 240, 0); }
+  }
+  spr(5, 112, 16, 16 + tens);
+  spr(6, 120, 16, 16 + units);
+}
+
+asm {
+palette:
+  .byte $21,$1A,$0A,$30, $21,$1A,$0A,$30, $21,$1A,$0A,$30, $21,$1A,$0A,$30
+  .byte $21,$28,$30,$16, $21,$28,$30,$16, $21,$28,$30,$16, $21,$28,$30,$16
+}
+.chr 1
+`+R('..3333..')+R('.333333.')+R('.331133.')+R('.333333.')+R('..3333..')+R('...33...')+R('..3333..')+R('.333333.')
+ +R('.333333.')+R('33333333',2)+R('.333333.')+R('.33..33.',4)
+ +R('11111111')+R('22222222',7)+R('22122222',8)
+ +R('..1111..')+R('.122221.')+R('12222221',4)+R('.122221.')+R('..1111..')+NCFONT});
+EX.push({'main.nc':`// SPARATUTTO - frecce sinistra/destra, A spara. Evita i nemici che scendono; dopo il game over premi Start. Scritto in NESC.
+var px, cool, tick, dead, tens, units, i, j, k;
+var bx[4], by[4], bon[4];        // proiettili: x, y, attivo
+var enx[4], eny[4], eon[4];      // nemici: x, y, attivo
+
+func newgame() {
+  px = 120; cool = 0; tick = 0; dead = 0; tens = 0; units = 0;
+  for (i = 0; i < 4; i += 1) { bon[i] = 0; eon[i] = 0; }
+}
+
+func init() {
+  load_palette(palette);
+  newgame();
+}
+
+func addscore() {
+  units += 1;
+  if (units >= 10) {
+    units = 0;
+    tens += 1;
+    if (tens >= 10) { tens = 0; }
+  }
+}
+
+func spawn() {
+  for (k = 0; k < 4; k += 1) {
+    if (eon[k] == 0) {
+      eon[k] = 1;
+      enx[k] = rand() & 240;
+      eny[k] = 0;
+      return;
+    }
+  }
+}
+
+func frame() {
+  if (dead) {
+    if (pad & BTN_START) { newgame(); }
+  } else {
+    if (pad & BTN_LEFT) { if (px > 2) { px -= 3; } }
+    if (pad & BTN_RIGHT) { if (px < 240) { px += 3; } }
+    if (cool > 0) { cool -= 1; }
+    if ((pad & BTN_A) && cool == 0) {
+      cool = 10;
+      for (i = 0; i < 4; i += 1) {
+        if (bon[i] == 0) { bon[i] = 1; bx[i] = px; by[i] = 200; i = 4; }
+      }
+    }
+    for (i = 0; i < 4; i += 1) {
+      if (bon[i]) {
+        if (by[i] < 6) { bon[i] = 0; } else { by[i] -= 6; }
+      }
+    }
+    tick += 1;
+    if (tick >= 40) { tick = 0; spawn(); }
+    for (i = 0; i < 4; i += 1) {
+      if (eon[i]) {
+        eny[i] += 2;
+        if (eny[i] >= 224) { eon[i] = 0; }
+        if (eny[i] + 8 > 208 && eny[i] < 216 && px + 8 > enx[i] && enx[i] + 8 > px) { dead = 1; }
+        for (j = 0; j < 4; j += 1) {
+          if (bon[j] && eon[i] && enx[i] + 8 > bx[j] && bx[j] + 8 > enx[i] && eny[i] + 8 > by[j] && by[j] + 8 > eny[i]) {
+            bon[j] = 0;
+            eon[i] = 0;
+            addscore();
+          }
+        }
+      }
+    }
+  }
+  if (dead) { spr(0, px, 208, 4); } else { spr(0, px, 208, 1); }
+  for (i = 0; i < 4; i += 1) {
+    if (bon[i]) { spri(1 + i, bx[i], by[i], 2); } else { spri(1 + i, 0, 240, 0); }
+    if (eon[i]) { spri(5 + i, enx[i], eny[i], 3); } else { spri(5 + i, 0, 240, 0); }
+  }
+  spr(10, 112, 16, 16 + tens);
+  spr(11, 120, 16, 16 + units);
+}
+
+asm {
+palette:
+  .byte $0F,$0F,$0F,$0F, $0F,$0F,$0F,$0F, $0F,$0F,$0F,$0F, $0F,$0F,$0F,$0F
+  .byte $0F,$30,$2A,$16, $0F,$30,$2A,$16, $0F,$30,$2A,$16, $0F,$30,$2A,$16
+}
+.chr 1
+`+R('...33...')+R('..3333..',2)+R('.333333.')+R('33333333')+R('33.33.33')+R('33....33')+R('3......3')
+ +R('...11...',4)+R('........',4)
+ +R('.22..22.')+R('..2222..')+R('.222222.')+R('22.22.22')+R('22222222')+R('..2222..')+R('.2....2.')+R('2......2')
+ +R('3..33..3')+R('.3.33.3.')+R('..3333..')+R('33.33.33',2)+R('..3333..')+R('.3.33.3.')+R('3..33..3')+NCFONT})}
 $('#ex').onchange=e=>{if(e.target.value!==''){{const x=EX[+e.target.value];setProj(typeof x=='string'?{'main.asm':x}:x)}dirty=0;nmt=new Uint8Array(1024);LV=[nmt];cs=0;mud=0;lvv=0;if(e.target.value=='2'){nmt.fill(0);for(let i=320;i<448;i++)nmt[i]=1+(i&1);applyNt()}else if(e.target.value=='6')mkLevel();else if(e.target.value=='7')mkSong();else if(e.target.value=='8')mkLevelV();relo()}e.target.value=''};
 try{const j=JSON.parse(localStorage.getItem('nes_ide_proj'));if(j&&j.FILES&&j.FILES[j.MAIN])setProj(j.FILES,j.CUR,j.MAIN);else setProj({'main.asm':EX[0]})}catch(e){setProj({'main.asm':EX[0]})}
 upd();relo();drawMu();requestAnimationFrame(tick);playerInit();fromHash();
