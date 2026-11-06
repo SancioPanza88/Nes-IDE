@@ -1991,22 +1991,35 @@ function ncCompile(src){
  const AN=()=>{let a=cmp();while(pk().v=='&&'){p++;a=['and',a,cmp()]}return a},C=()=>{let a=AN();while(pk().v=='||'){p++;a=['or',a,AN()]}return a};
  function B(){eat('{');const r=[];while(pk().v!='}'){if(!tk[p])throw er(line,'manca «}»');r.push(S())}p++;return r}
  function S(){const t=tk[p];if(!t)throw er(line,'blocco non chiuso');
-  if(t.v=='var'){p++;do{const n=tk[p++];if(!n||n.k!='i')throw er(t.l,'nome di variabile mancante');if(pk().v=='[')throw er(t.l,'gli array locali non sono supportati: dichiaralo fuori dalla funzione');LOC[curF][n.v]=curF+'_'+n.v;V[curF+'_'+n.v]=vz++;if(vz>0xF0)throw er(t.l,'troppe variabili (max 208)')}while(pk().v==','&&++p);eat(';');return['nop',t.l]}
+  if(t.v=='var'||t.v=='var16'){const w16=t.v=='var16';p++;do{const n=tk[p++];if(!n||n.k!='i')throw er(t.l,'nome di variabile mancante');if(pk().v=='[')throw er(t.l,'gli array locali non sono supportati: dichiaralo fuori dalla funzione');LOC[curF][n.v]=curF+'_'+n.v;V[curF+'_'+n.v]=vz;vz+=w16?2:1;if(w16)W[curF+'_'+n.v]=1;if(vz>0xF0)throw er(t.l,'troppe variabili (max 208)')}while(pk().v==','&&++p);eat(';');return['nop',t.l]}
   if(t.v=='for'){p++;eat('(');const i=SS();eat(';');const c=C();eat(';');const q=SS();eat(')');const b=B();return['block',[i,['while',c,[...b,q],t.l]]]}
   if(t.v=='if'){p++;eat('(');const c=C();eat(')');const a=B();let b=null;if(pk().v=='else'){p++;b=pk().v=='if'?[S()]:B()}return['if',c,a,b,t.l]}
   if(t.v=='while'){p++;eat('(');const c=C();eat(')');return['while',c,B(),t.l]}
   if(t.v=='return'){p++;let e=null;if(pk().v!=';')e=E();eat(';');return['ret',e,t.l]}
   const n=SS();eat(';');return n}
  function SS(){const t=tk[p++];if(pk().v=='('){p++;return['call',t.v,args(),t.l]}let ix=null;if(pk().v=='['){p++;ix=E();eat(']')}const o=tk[p++];if(!o||!['=','+=','-='].includes(o.v))throw er(t.l,'istruzione non valida: «'+t.v+'»');return['set',t.v,ix,o.v,E(),t.l]}
- const LOC={},PR={},V={},A={},F={},K={BTN_A:128,BTN_B:64,BTN_SELECT:32,BTN_START:16,BTN_UP:8,BTN_DOWN:4,BTN_LEFT:2,BTN_RIGHT:1};let vz=0x20,va=0x300,curF='';
+ const LOC={},PR={},W={},V={},A={},F={},K={BTN_A:128,BTN_B:64,BTN_SELECT:32,BTN_START:16,BTN_UP:8,BTN_DOWN:4,BTN_LEFT:2,BTN_RIGHT:1};let vz=0x20,va=0x300,curF='';
  while(p<tk.length){const t=tk[p++];
-  if(t.v=='var'){do{const n=tk[p++];if(!n||n.k!='i')throw er(t.l,'nome di variabile mancante');if(pk().v=='['){p++;const z=tk[p++].v;eat(']');A[n.v]=va;va+=z}else{V[n.v]=vz++;if(vz>0xF0)throw er(t.l,'troppe variabili (max 208)')}}while(pk().v==','&&++p);eat(';')}
+  if(t.v=='var'||t.v=='var16'){const w16=t.v=='var16';do{const n=tk[p++];if(!n||n.k!='i')throw er(t.l,'nome di variabile mancante');if(pk().v=='['){if(w16)throw er(t.l,'var16 non può essere un array');p++;const z=tk[p++].v;eat(']');A[n.v]=va;va+=z}else{V[n.v]=vz;vz+=w16?2:1;if(w16)W[n.v]=1;if(vz>0xF0)throw er(t.l,'troppe variabili (max 208)')}}while(pk().v==','&&++p);eat(';')}
   else if(t.v=='const'){const n=tk[p++].v;eat('=');K[n]=tk[p++].v;eat(';')}
   else if(t.v=='func'){const n=tk[p++].v;curF=n;LOC[n]={};PR[n]=[];eat('(');if(pk().v!=')'){do{const q=tk[p++];if(!q||q.k!='i')throw er(t.l,'nome di parametro mancante');LOC[n][q.v]=n+'_'+q.v;V[n+'_'+q.v]=vz++;PR[n].push(n+'_'+q.v)}while(pk().v==','&&++p)}eat(')');F[n]=B();curF=''}
   else throw er(t.l,'«'+t.v+'» non è valido qui (usa var, const, func)')}
- const o=[];let lb=0,cl=1,rnd=0,MD=0;const res=n=>{const q=(LOC[curF]||{})[n];return q!==undefined?q:(n in V?n:null)};const L=()=>'_L'+(++lb),em=(...x)=>x.forEach(t=>o.push([t,cl]));
- const simple=r=>r[0]=='n'||(r[0]=='v'&&res(r[1])!==null),opnd=r=>r[0]=='n'?'#'+(r[1]&255):'v_'+res(r[1]);
- function ex(e){const k=e[0];
+ const o=[];let lb=0,cl=1,rnd=0,MD=0;const res=n=>{const q=(LOC[curF]||{})[n];return q!==undefined?q:(n in V?n:null)};
+ const isW=e=>{const k=e[0];if(k=='n')return e[1]>255;if(k=='v'){const q=res(e[1]);return q!==null?!!W[q]:(e[1] in K&&K[e[1]]>255)}if(k=='b'){const o=e[1];return o=='<<'||o=='>>'?isW(e[2]):isW(e[2])||isW(e[3])}return false};const L=()=>'_L'+(++lb),em=(...x)=>x.forEach(t=>o.push([t,cl]));
+ const simple=r=>(r[0]=='n'&&r[1]<=255)||(r[0]=='v'&&res(r[1])!==null&&!W[res(r[1])]),opnd=r=>r[0]=='n'?'#'+(r[1]&255):'v_'+res(r[1]);
+ function ex16(e){const k=e[0];   // risultato a 16 bit: A = byte basso, nc_hi = byte alto
+  if(!isW(e)){ex(e);return em(' ldx #0',' stx nc_hi')}
+  if(k=='n')return em(' lda #'+(e[1]&255),' ldx #'+(e[1]>>8&255),' stx nc_hi');
+  if(k=='v'){const q=res(e[1]);if(q===null){const v=K[e[1]];return em(' lda #'+(v&255),' ldx #'+(v>>8&255),' stx nc_hi')}return em(' lda v_'+q+'+1',' sta nc_hi',' lda v_'+q)}
+  const[,op,l,r]=e;
+  if(op=='<<'||op=='>>'){if(r[0]!='n')throw er(cl,'lo scorrimento vuole una costante');ex16(l);em(' sta nc_t');for(let i=0;i<r[1];i++)em(...(op=='<<'?[' asl nc_t',' rol nc_hi']:[' lsr nc_hi',' ror nc_t']));return em(' lda nc_t')}
+  if('*/%'.includes(op))throw er(cl,'* / % lavorano solo a 8 bit');
+  const ins={'+':['clc','adc'],'-':['sec','sbc'],'&':['and','and'],'|':['ora','ora'],'^':['eor','eor']}[op];
+  ex16(l);
+  if(r[0]=='n'&&r[1]<=255&&(op=='+'||op=='-'))return em(' '+ins[0],' '+ins[1]+' #'+r[1],' pha',' lda nc_hi',' '+ins[1]+' #0',' sta nc_hi',' pla');
+  em(' pha',' lda nc_hi',' pha');ex16(r);em(' sta nc_t',' lda nc_hi',' sta nc_t2',' pla',' sta nc_hi',' pla');
+  if(op=='+'||op=='-')em(' '+ins[0]);em(' '+ins[1]+' nc_t',' pha',' lda nc_hi',' '+ins[1]+' nc_t2',' sta nc_hi',' pla')}
+ function ex(e){if(isW(e))return ex16(e);const k=e[0];
   if(k=='n')return em(' lda #'+(e[1]&255));
   if(k=='v'){const n=e[1];const q=res(n);if(q!==null)return em(' lda v_'+q);if(n in K)return em(' lda #'+(K[n]&255));if(n=='pad')return em(' lda nc_pad');throw er(e[2],'variabile sconosciuta: '+n)}
   if(k=='a'){if(!(e[1] in A))throw er(e[3],'array sconosciuto: '+e[1]);ex(e[2]);return em(' tax',' lda a_'+e[1]+',x')}
@@ -2020,8 +2033,8 @@ function ncCompile(src){
   if(c[0]=='or'){const m=L(),t=L();cnd(c[1],m);em(' jmp '+t,m+':');cnd(c[2],Fl);em(t+':');return}
   if(c[0]=='and'){cnd(c[1],Fl);cnd(c[2],Fl);return}
   const t=L();
-  if(c[0]=='nz'){ex(c[1]);em(' cmp #0',' bne '+t,' jmp '+Fl,t+':');return}
-  const[,op,l,r]=c;ex(l);if(simple(r))em(' cmp '+opnd(r));else{em(' pha');ex(r);em(' sta nc_t',' pla',' cmp nc_t')}
+  if(c[0]=='nz'){if(isW(c[1])){ex16(c[1]);em(' ora nc_hi')}else{ex(c[1]);em(' cmp #0')}em(' bne '+t,' jmp '+Fl,t+':');return}
+  const[,op,l,r]=c;if(isW(l)||isW(r)){const d=L();ex16(l);em(' pha',' lda nc_hi',' pha');ex16(r);em(' sta nc_t',' lda nc_hi',' sta nc_t2',' pla',' sta nc_hi',' pla',' sta nc_u',' lda nc_hi',' cmp nc_t2',' bne '+d,' lda nc_u',' cmp nc_t',d+':')}else{ex(l);if(simple(r))em(' cmp '+opnd(r));else{em(' pha');ex(r);em(' sta nc_t',' pla',' cmp nc_t')}}
   if(op=='>'){const f=L();em(' beq '+f,' bcs '+t,f+':',' jmp '+Fl,t+':');return}
   if(op=='<='){em(' bcc '+t,' beq '+t,' jmp '+Fl,t+':');return}
   em(' '+{'==':'beq','!=':'bne','<':'bcc','>=':'bcs'}[op]+' '+t,' jmp '+Fl,t+':')}
@@ -2035,7 +2048,7 @@ function ncCompile(src){
   else if(k=='call')call(s);
   else{const[,n,ix,op,e,l]=s;let ee=e;if(op!='=')ee=['b',op[0],ix?['a',n,ix,l]:['v',n,l],e];
    if(ix){if(!(n in A))throw er(l,'array sconosciuto: '+n);ex(ee);em(' pha');ex(ix);em(' tax',' pla',' sta a_'+n+',x')}
-   else{const q=res(n);if(q===null)throw er(l,'variabile sconosciuta: '+n);ex(ee);em(' sta v_'+q)}}}
+   else{const q=res(n);if(q===null)throw er(l,'variabile sconosciuta: '+n);if(W[q]){ex16(ee);em(' sta v_'+q,' lda nc_hi',' sta v_'+q+'+1')}else{ex(ee);em(' sta v_'+q)}}}}
  function callF(n,a,l){if(a.length!=PR[n].length)throw er(l,n+' vuole '+PR[n].length+' argomenti');a.forEach(x=>{ex(x);em(' pha')});for(let i=a.length-1;i>=0;i--)em(' pla',' sta v_'+PR[n][i]);em(' jsr nc_'+n)}
  function call(s){const[,n,a,l]=s,cst=(x,w)=>{if(!x||x[0]!='n')throw er(l,n+': '+w+' deve essere una costante');return x[1]};
   if(n in F)return callF(n,a,l);
@@ -2048,7 +2061,7 @@ function ncCompile(src){
   if(n=='load_palette'){const x=L();if(!a[0]||a[0][0]!='v')throw er(l,'load_palette(etichetta)');return em(' lda #$3F',' sta PPUADDR',' lda #0',' sta PPUADDR',' ldx #0',x+':',' lda '+a[0][1]+',x',' sta PPUDATA',' inx',' cpx #32',' bne '+x)}
   throw er(l,'funzione sconosciuta: '+n)}
  for(const n in F){cl=1;curF=n;em('nc_'+n+':');blk(F[n]);em(' rts')}curF='';
- const fun=o.splice(0),pre=['; --- generato dal compilatore NESC ---','PPUCTRL=$2000','PPUMASK=$2001','PPUSTATUS=$2002','OAMADDR=$2003','PPUSCROLL=$2005','PPUADDR=$2006','PPUDATA=$2007','OAMDMA=$4014','JOY=$4016','nc_oam=$0200','nc_pad=$00','nc_t=$01','nc_sx=$02','nc_sy=$03','nc_rnd=$04','nc_u=$05',
+ const fun=o.splice(0),pre=['; --- generato dal compilatore NESC ---','PPUCTRL=$2000','PPUMASK=$2001','PPUSTATUS=$2002','OAMADDR=$2003','PPUSCROLL=$2005','PPUADDR=$2006','PPUDATA=$2007','OAMDMA=$4014','JOY=$4016','nc_oam=$0200','nc_pad=$00','nc_t=$01','nc_sx=$02','nc_sy=$03','nc_rnd=$04','nc_u=$05','nc_hi=$06','nc_t2=$07',
   ...Object.entries(V).map(([n,a])=>'v_'+n+'=$'+a.toString(16)),...Object.entries(A).map(([n,a])=>'a_'+n+'=$'+a.toString(16)),'.org $8000','reset:',' sei',' cld',' ldx #$FF',' txs',' inx',' stx PPUCTRL',' stx PPUMASK','nc_v1: bit PPUSTATUS',' bpl nc_v1',' lda #$FF','nc_h: sta nc_oam,x',' inx',' bne nc_h','nc_v2: bit PPUSTATUS',' bpl nc_v2',' lda #$A5',' sta nc_rnd',...('init' in F?[' jsr nc_init']:[]),' lda #0',' sta PPUSCROLL',' sta PPUSCROLL',' lda #%10000000',' sta PPUCTRL',' lda #%00011110',' sta PPUMASK','nc_fv: jmp nc_fv',
   'nmi:',' pha',' txa',' pha',' tya',' pha',' lda #0',' sta OAMADDR',' lda #>nc_oam',' sta OAMDMA',' lda #1',' sta JOY',' lda #0',' sta JOY',' ldx #8','nc_rd: lda JOY',' lsr a',' rol nc_pad',' dex',' bne nc_rd',...('frame' in F?[' jsr nc_frame']:[]),' lda nc_sx',' sta PPUSCROLL',' lda nc_sy',' sta PPUSCROLL',' pla',' tay',' pla',' tax',' pla',' rti','irq: rti'],
   rr=[...(rnd?['nc_rand:',' lda nc_rnd',' asl a',' bcc nc_rn',' eor #$1D','nc_rn: sta nc_rnd',' rts']:[]),...(MD&1?['nc_mul:',' sta nc_u',' lda #0',' ldx #8','nc_m1: lsr nc_u',' bcc nc_m2',' clc',' adc nc_t','nc_m2: asl nc_t',' dex',' bne nc_m1',' rts']:[]),...(MD&2?['nc_div:',' ldx nc_t',' beq nc_dz',' ldx #0','nc_d1: cmp nc_t',' bcc nc_d2',' sbc nc_t',' inx',' jmp nc_d1','nc_d2: sta nc_u',' txa',' rts','nc_dz: sta nc_u',' lda #255',' rts']:[])];
